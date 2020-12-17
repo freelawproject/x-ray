@@ -1,3 +1,5 @@
+![Image of REDACTED STAMP](https://github.com/freelawproject/pdf-redaction-detector/blob/master/Screenshot%20from%202020-12-17%2011-06-09.png)
+
 # new-project-template
 A template repo for new CL projects
 
