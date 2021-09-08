@@ -53,6 +53,13 @@ jobs:
       - name: mypy Static Type Checker
         run: mypy .
 
+      - name: Flynt f-string Formatter
+        run: >
+          flynt .
+          --line-length=79
+          --transform-concats
+          --fail-on-change
+
   lint-report:
     runs-on: ubuntu-latest
     steps:
@@ -87,7 +94,7 @@ jobs:
       - name: pylint Generate Report
         run: |
           pip install pylint-json2html
-          pylint --load-plugins=pylint_json2html -f jsonextended project_name > pylint-report.json
+          pylint --load-plugins=pylint_json2html -f jsonextended pdf-redaction-detector > pylint-report.json
           pylint-json2html -f jsonextended -o pylint-report.html pylint-report.json
 
       - name: Upload report
