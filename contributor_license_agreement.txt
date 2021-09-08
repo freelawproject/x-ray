@@ -15,19 +15,20 @@ If you have not already done so, please complete and sign, then scan and email
 a pdf file of this Agreement to legal@free.law. Please read this document
 carefully before signing and keep a copy for your records.
 
-  Full name: ______________________________________________________
+  Full name: Eugene Volokh
 
   (optional) Public name: _________________________________________
 
-  Mailing Address: ________________________________________________
-
+  Mailing Address: UCLA School of Law
+                   385 Charles E. Young Dr. E
+                   L.A., CA 90095
                    ________________________________________________
 
-  Country:   ______________________________________________________
+  Country:   USA
 
-  Telephone: ______________________________________________________
+  Telephone: 310-206-3926
 
-  E-Mail:    ______________________________________________________
+  E-Mail:    volokh@law.ucla.edu
 
 You accept and agree to the following terms and conditions for Your present and
 future Contributions submitted to the Project. In return, the Project shall not
@@ -125,5 +126,5 @@ to Your Contributions.
    become aware that would make these representations inaccurate in any
    respect.
 
-Please sign: __________________________________ Date: ________________
+Please sign: Eugene Volokh			Date: 	2021/09/07
                                                         YYYY/MM/DD
