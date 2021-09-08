@@ -15,28 +15,30 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-description = "{{PROJECT_DESCRIPTION}}"
-keywords = ["legal", "courts"]
+description = "A library and microservice to find bad redactions in PDFs"
+keywords = ["legal", "courts", "redactions"]
 license = "BSD-2-Clause"
 maintainers = ["Free Law Project <info@free.law>"]
-name = "{{PROJECT_NAME}}"
+name = "PDF Redaction Detector"
 readme = "README.md"
-repository = "https://github.com/freelawproject/{{PROJECT_NAME}}"
+repository = "https://github.com/freelawproject/pdf-redaction-detector"
 version = "0.0.1"
 
 [tool.poetry.urls]
 "Organisation Homepage" = "https://free.law/"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.6.2"
 
 [tool.poetry.dev-dependencies]
-black = "^20.8b1"
+black = "^21.8b0"
 flake8 = "^3.9.0"
 isort = "^5.8.0"
-mypy = "^0.901"
+mypy = "^0.910"
 pylint = "^2.7.1"
 wheel = "^0.35.1"
+flynt = "^0.66"
+pre-commit = "^2.15.0"
 
 [tool.black]
 include = '''.*\.pyi?$'''

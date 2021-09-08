@@ -1,0 +1,46 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+exclude: migrations
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+     - id: check-added-large-files
+     - id: check-ast
+     - id: check-json
+     - id: check-merge-conflict
+     - id: check-toml
+     - id: check-xml
+     - id: check-yaml
+     - id: end-of-file-fixer
+     - id: check-byte-order-marker
+     - id: fix-encoding-pragma
+       args: [--remove]
+     - id: trailing-whitespace
+       args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/ikamensh/flynt/
+    rev: '0.63'
+    hooks:
+     - id: flynt
+       args: [--line-length=79, --transform-concats]
+
+  - repo: https://github.com/psf/black
+    rev: 21.6b0
+    hooks:
+     - id: black
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.9.1
+    hooks:
+     - id: isort
+       name: isort (python)
+
+#
+# Tried and Failed
+#
+# 1. I tried doing mypy too, but it was a mess because it runs in its own
+#   isolated environment, that lacks all our dependencies.
+# 2. We might want flake8 someday. It's easy to turn on, but it's so noisy on
+#    our current code that it'd take some fine-tuning to get it right.
+# 3. semgrep was too slow and had to be moved to a github action.
