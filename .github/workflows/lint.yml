@@ -48,7 +48,7 @@ jobs:
         uses: isort/isort-action@v0.1.0
 
       - name: pylint Error Checker
-        run: pylint -E -f colorized project_name
+        run: pylint -E -f colorized xray
 
       - name: mypy Static Type Checker
         run: mypy .
@@ -94,7 +94,7 @@ jobs:
       - name: pylint Generate Report
         run: |
           pip install pylint-json2html
-          pylint --load-plugins=pylint_json2html -f jsonextended pdf-redaction-detector > pylint-report.json
+          pylint --load-plugins=pylint_json2html -f jsonextended xray > pylint-report.json
           pylint-json2html -f jsonextended -o pylint-report.html pylint-report.json
 
       - name: Upload report
