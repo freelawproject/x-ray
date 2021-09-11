@@ -16,14 +16,14 @@ from xray.pdf_utils import (
     intersects,
 )
 
-root_path = Path(__file__).resolve().parent
+root_path = Path(__file__).resolve().parent / "assets"
 
 
 class RectTest(TestCase):
     """Do our rectangle-finding utilities work properly?"""
 
     def test_pymupdf_works_with_path_or_str(self):
-        path_str = "assets/rectangles_yes.pdf"
+        path_str = "rectangles_yes.pdf"
         paths = (
             root_path / path_str,
             os.path.join(str(root_path), path_str),
@@ -35,8 +35,8 @@ class RectTest(TestCase):
 
     def test_we_find_rectangles_when_we_should(self):
         paths = (
-            root_path / "assets/rectangles_yes.pdf",
-            root_path / "assets/rectangles_yes_2.pdf",
+            root_path / "rectangles_yes.pdf",
+            root_path / "rectangles_yes_2.pdf",
         )
         for path in paths:
             with fitz.open(path) as pdf:
@@ -44,7 +44,7 @@ class RectTest(TestCase):
                 self.assertTrue(get_good_rectangles(page))
 
     def test_we_do_not_find_rectangles_when_we_should_not(self):
-        path = root_path / "assets/rectangles_no.pdf"
+        path = root_path / "rectangles_no.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             self.assertFalse(get_good_rectangles(page))
@@ -91,7 +91,7 @@ class OcclusionTest(TestCase):
     """Can we get a list of bad redactions?"""
 
     def test_finding_bad_redactions(self):
-        path = root_path / "assets/rectangles_yes.pdf"
+        path = root_path / "rectangles_yes.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
@@ -101,7 +101,7 @@ class OcclusionTest(TestCase):
 class IntegrationTest(TestCase):
     """Do our highest-level APIs work?"""
 
-    path = root_path / "assets/rectangles_yes.pdf"
+    path = root_path / "rectangles_yes.pdf"
 
     def test_bad_redactions_on_single_page(self):
         with fitz.open(self.path) as pdf:
@@ -112,3 +112,12 @@ class IntegrationTest(TestCase):
     def test_finding_bad_redactions_in_a_file(self):
         redactions = xray.inspect(self.path)
         self.assertTrue(len(redactions[1]) == 3)
+
+    def test_empty_pages_no_results(self):
+        path = root_path / "no_bad_redactions.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Didn't get empty dict when there were no redactions.",
+        )

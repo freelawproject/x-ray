@@ -22,7 +22,9 @@ def inspect(file_path: Union[str, Path]) -> Dict[int, List[RedactionType]]:
     pdf = fitz.open(file_path)
     bad_redactions = {}
     for page_number, page in enumerate(pdf, start=1):
-        bad_redactions[page_number] = get_bad_redactions(page)
+        redactions = get_bad_redactions(page)
+        if redactions:
+            bad_redactions[page_number] = redactions
     pdf.close()
 
     return bad_redactions
