@@ -7,8 +7,8 @@ from typing import List, Tuple
 
 import fitz
 from fitz import Page, Rect
-
 from text_utils import is_ok_words, is_repeated_chars
+
 from .custom_types import CharDictType, RedactionType
 
 
