@@ -15,9 +15,9 @@ def inspect(file_path: Union[str, Path]) -> Dict[int, List[RedactionType]]:
     """
     Inspect a file for bad redactions and return a Dict with their info
 
-    :file_path: The path to a PDF
-    :return: Either a dict with the bad redaction information or None if no bad
-    redactions are found.
+    :file_path: The PDF to process
+    :return: A dict with the bad redaction information. If no bad redactions
+    are found, returns an empty dict.
     """
     pdf = fitz.open(file_path)
     bad_redactions = {}
