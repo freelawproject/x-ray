@@ -1,13 +1,14 @@
 """
 Utilities for working with PDFs and redactions
 """
-
+import re
 from itertools import chain
 from typing import List, Tuple
 
 import fitz
 from fitz import Page, Rect
 
+from text_utils import is_ok_words, is_repeated_chars
 from .custom_types import CharDictType, RedactionType
 
 
@@ -155,7 +156,29 @@ def group_chars_by_rect(
             if Rect(*char["bbox"]) & rect:
                 redaction["text"] += char["c"]
         redactions.append(redaction)
+
     return redactions
+
+
+def filter_redactions(redactions: List[RedactionType]) -> List[RedactionType]:
+    """Filter out redactions that are not actually bad.
+
+    :param redactions: A list of redactions that might be bad
+    :return: A (hopefully) smaller list of redactions
+    """
+    # Isn't just repeated text like XXXX
+    redactions = filter(lambda r: not is_repeated_chars(r["text"]), redactions)
+
+    # Has non-whitespace content and isn't blank
+    redactions = filter(lambda r: r["text"].strip(), redactions)
+
+    # Has some letters or numbers
+    redactions = filter(lambda r: re.search(r"[\d\w]", r["text"]), redactions)
+
+    # Has OK words in redaction
+    redactions = filter(lambda r: is_ok_words(r["text"]), redactions)
+
+    return list(redactions)
 
 
 def get_bad_redactions(page: Page) -> List[RedactionType]:
@@ -167,5 +190,6 @@ def get_bad_redactions(page: Page) -> List[RedactionType]:
     """
     good_rectangles = get_good_rectangles(page)
     intersecting_chars = get_intersecting_chars(page, good_rectangles)
-    bad_redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
+    redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
+    bad_redactions = filter_redactions(redactions)
     return bad_redactions

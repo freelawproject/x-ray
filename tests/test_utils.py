@@ -107,7 +107,7 @@ class IntegrationTest(TestCase):
         with fitz.open(self.path) as pdf:
             page = pdf[0]
             bad_redactions = get_bad_redactions(page)
-        self.assertTrue(len(bad_redactions) == 3)
+        self.assertEqual(len(bad_redactions), 3)
 
     def test_finding_bad_redactions_in_a_file(self):
         redactions = xray.inspect(self.path)
@@ -120,4 +120,28 @@ class IntegrationTest(TestCase):
             redactions,
             {},
             msg="Didn't get empty dict when there were no redactions.",
+        )
+
+    def test_whitespace_only_redaction_no_results(self):
+        paths = (
+            "whitespace_redactions.pdf",
+            "whitespace_redactions_2.pdf",
+            "whitespace_redaction_with_comma.pdf",
+        )
+        for path in paths:
+            redactions = xray.inspect(root_path / path)
+            self.assertEqual(
+                redactions,
+                {},
+                msg="Didn't get empty dict when encountering exclusively "
+                "whitespace-filled redactions.",
+            )
+
+    def test_ok_words_not_redacted(self):
+        path = root_path / "ok_words.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redaction even though none in document",
         )
