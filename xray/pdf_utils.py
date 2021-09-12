@@ -7,8 +7,8 @@ from typing import List, Tuple
 
 import fitz
 from fitz import Page, Rect
-
 from text_utils import is_ok_words, is_repeated_chars
+
 from .custom_types import CharDictType, RedactionType
 
 
@@ -48,7 +48,11 @@ def get_good_rectangles(page: Page) -> List[Rect]:
     return good_rectangles
 
 
-def intersects(bbox: Tuple[float, ...], rectangles: List[Rect]) -> bool:
+def intersects(
+    bbox: Tuple[float, ...],
+    rectangles: List[Rect],
+    occlusion_threshold: float = 0.0,
+) -> bool:
     """Determine if a bbox intersects with any of a list of rectangles
 
     :param bbox: A four-tuple of floats denoting a bounding box of a rectangle.
@@ -56,12 +60,53 @@ def intersects(bbox: Tuple[float, ...], rectangles: List[Rect]) -> bool:
     are the bottom right. Note that the Y-axis is reversed so it starts at the
     top of the page, not the bottom left.
     :param rectangles: A list of PyMuPDF.Rect objects
+    :param occlusion_threshold: How much the bbox must be occluded by at least
+    one of the rectangles for it to be considered an intersection, as a
+    percentage. E.g., 1.0 means that the bbox must be fully occluded, 0.10
+    means it must be 10% occluded. The default, 0.0, means they must intersect
+    at least a little.
     :return True if any part of the bbox intersects with any of the rectangles,
     else False.
     """
+    overlapping_areas = []
     for rect in rectangles:
-        if Rect(*bbox) & rect:
-            return True
+        # The overlapping area of two rectangles is defined by the product of
+        # the length of their vertical and horizontal intersections.
+        # See: https://stackoverflow.com/a/52194761/64911, in particular the
+        # image that shows the bolded horizontal and vertical lines that get
+        # multiplied.
+        #
+        # As a formula, this takes the form of:
+        #
+        #   A = max(0, min(r0, r1) - max(l0, l1)) *   # horizontal intersection
+        #         max(0, min(b0, b1) - max(t0, t1))   # vertical intersection
+        bbox_left, bbox_top, bbox_right, bbox_bottom = (
+            bbox[0],
+            bbox[1],
+            bbox[2],
+            bbox[3],
+        )
+        rect_left, rect_top, rect_right, rect_bottom = (
+            rect.x0,
+            rect.y0,
+            rect.x1,
+            rect.y1,
+        )
+        vertical_intersection = max(
+            0.0, min(bbox_bottom, rect_bottom) - max(bbox_top, rect_top)
+        )
+        horizontal_intersection = max(
+            0.0, min(bbox_right, rect_right) - max(bbox_left, rect_left)
+        )
+        overlapping_area = horizontal_intersection * vertical_intersection
+        overlapping_areas.append(overlapping_area)
+
+    greatest_occluded = max(overlapping_areas)
+    area_of_bbox = Rect(*bbox).get_area()
+
+    percent_occluded = greatest_occluded / area_of_bbox
+    if percent_occluded > occlusion_threshold:
+        return True
     return False
 
 
@@ -125,7 +170,9 @@ def get_intersecting_chars(
     # Get a flat list of intersecting chars
     chars = chain(*[span["chars"] for span in intersecting_spans])
     intersecting_chars = filter(
-        lambda char: intersects(char["bbox"], rectangles),
+        lambda char: intersects(
+            char["bbox"], rectangles, occlusion_threshold=0.8
+        ),
         chars,
     )
     return list(intersecting_chars)

@@ -95,7 +95,14 @@ class OcclusionTest(TestCase):
         with fitz.open(path) as pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
-        self.assertTrue(len(chars) == 65)
+        self.assertEqual(len(chars), 64)
+
+    def test_ignoring_partial_occlusions(self):
+        path = root_path / "partial_intersections_ok.pdf"
+        with fitz.open(path) as pdf:
+            page = pdf[0]
+            chars = get_intersecting_chars(page, get_good_rectangles(page))
+        self.assertEqual(len(chars), 0)
 
 
 class IntegrationTest(TestCase):
