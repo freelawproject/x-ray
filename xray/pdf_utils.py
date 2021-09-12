@@ -2,6 +2,7 @@
 Utilities for working with PDFs and redactions
 """
 import re
+import typing
 from itertools import chain
 from typing import List, Tuple
 
@@ -207,6 +208,7 @@ def group_chars_by_rect(
     return redactions
 
 
+@typing.no_type_check  # It gets confused w/filters
 def filter_redactions(redactions: List[RedactionType]) -> List[RedactionType]:
     """Filter out redactions that are not actually bad.
 
