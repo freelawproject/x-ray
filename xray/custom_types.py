@@ -1,6 +1,6 @@
 """Custom types for MyPy"""
 
-from typing import Tuple, TypedDict
+from typing import Dict, List, Tuple, TypedDict
 
 
 class RedactionType(TypedDict):
@@ -8,6 +8,10 @@ class RedactionType(TypedDict):
 
     bbox: Tuple[float, ...]
     text: str
+
+
+# The type used for the top-level dictionary of all redactions for a document
+PdfRedactionsDict = Dict[int, List[RedactionType]]
 
 
 class CharDictType(TypedDict):

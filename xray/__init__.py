@@ -3,15 +3,15 @@ Find bad redactions.
 """
 
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Union
 
 import fitz
 
-from .custom_types import RedactionType
+from .custom_types import PdfRedactionsDict
 from .pdf_utils import get_bad_redactions
 
 
-def inspect(file_path: Union[str, Path]) -> Dict[int, List[RedactionType]]:
+def inspect(file_path: Union[str, Path]) -> PdfRedactionsDict:
     """
     Inspect a file for bad redactions and return a Dict with their info
 
