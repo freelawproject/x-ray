@@ -97,6 +97,13 @@ class OcclusionTest(TestCase):
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 64)
 
+    def test_cross_hatches_are_ok(self):
+        path = root_path / "bad_cross_hatched_redactions.pdf"
+        with fitz.open(path) as pdf:
+            page = pdf[0]
+            chars = get_intersecting_chars(page, get_good_rectangles(page))
+        self.assertEqual(len(chars), 639)
+
     def test_ignoring_partial_occlusions(self):
         path = root_path / "partial_intersections_ok.pdf"
         with fitz.open(path) as pdf:
