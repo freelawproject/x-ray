@@ -28,7 +28,7 @@ version = "0.0.1"
 "Organisation Homepage" = "https://free.law/"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 PyMuPDF = "^1.18.17"
 
 [tool.poetry.dev-dependencies]
