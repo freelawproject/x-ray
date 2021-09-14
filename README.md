@@ -1,96 +1,143 @@
-![Image of REDACTED STAMP](https://github.com/freelawproject/pdf-redaction-detector/blob/master/Screenshot%20from%202020-12-17%2011-06-09.png)
+![Image of REDACTED STAMP](https://raw.githubusercontent.com/freelawproject/x-ray/main/redacted.png)
 
-# new-project-template
-A template repo for new CL projects
+x-ray is a Python library for finding bad redactions in PDF documents.
 
-# {{NEW-PROJECT}}
+## Why?
 
-{{NEW-PROJECT}} is an open source repository to ...
-It was built for use with Courtlistener.com.
+At Free Law Project, we collect millions of PDFs each day. An ongoing problem
+is that people fail to properly redact things. Instead of doing it the right
+way, they just draw a black rectangle or a black highlight on top of black
+text and call it a day. Well, when that happens you just select the text under
+the rectangle, and you can read it again. Not great.
 
-Its main goal is to ...
-It incldues mechanisms to ...
-
-Further development is intended and all contributors, corrections and additions are welcome.
-
-## Background
-
-Free Law Project built this ...  This project represents ...  
-We believe to be the ....
-
-## Quickstart
-
-You can feed in a X as ... .. ...
-
-```
-IMPORTS
-
-CALL EXAMPLE
-
-returns:
-  ""EXAMPLE OUTPUT
-```
+After witnessing this problem for years, we decided it would be good to figure
+out how common it is, so, with some help, we built this simple tool. You give
+the tool the path to a PDF. It tells you if it has worthless redactions in it.
 
 
+## What next?
 
-## Some Notes ...
-Somethings to keep in mind as ....
-
-1. ...
-2. ...
-
-
-## Fields
-
-1. `id` ==> string; Courtlistener Court Identifier
-2. `court_url` ==> string; url for court website
-3. `regex` ==>  array; regexes patterns to find courts
+Right now, `x-ray` works pretty well and we are using it to analyze documents
+in our collections. It could be better though. Bad redactions take many forms.
+See the issues tab for other examples we don't yet support. We'd love your
+help solving some of tougher cases.
 
 
 ## Installation
 
-Installing {{NEW-PROJECT}} is easy.
+With poetry, do:
 
-```sh
-pip install {{NEW-PROJECT}}
+```text
+poetry add x-ray
 ```
 
-
-Or install the latest dev version from github
-
-```sh
-pip install git+https://github.com/freelawproject/{{NEW-PROJECT}}.git@master
+With pip, that'd be:
+```text
+pip install x-ray
 ```
 
-## Future
+## Usage
 
-1) Continue to improve ...
-2) Future updates
+You can easily use this on the command line. Once installed, just:
+
+```bash
+% python -m xray path/to/your/file.pdf
+{
+  "1": [
+    {
+      "bbox": [
+        58.550079345703125,
+        72.19873046875,
+        75.65007781982422,
+        739.3987426757812
+      ],
+      "text": "The Ring travels by way of Cirith Ungol"
+    }
+  ]
+}
+```
+
+That'll give you json, so you can use it with tools like [`jq`][jq]. The format is as follows:
+
+ - It's a dict.
+ - The keys are page numbers.
+ - Each page number maps to a list of dicts.
+ - Each of those dicts maps to two keys.
+ - The first key is `bbox`. This is a four-tuple that indicates the x,y positions of the upper left corner and then lower right corners of the bad redaction.
+ - The second key is `text`. This is the text under the bad rectangle.
+
+Simple enough.
+
+If you want a bit more, you can use `x-ray` in Python:
+
+```python
+from pprint import pprint
+import xray
+bad_redactions = xray.inspect("some/path/to/your/file.pdf")
+pprint(bad_redactions)
+{1: [{'bbox': (58.550079345703125,
+               72.19873046875,
+               75.65007781982422,
+               739.3987426757812),
+      'text': 'Aragorn is the one true king.'}]}
+```
+
+The output is the same as above, except it's a Python object, not a JSON object.
+
+That's pretty much it. There are no configuration files or other variables to
+learn. You give it a file name. If there is a bad redaction in it, you'll soon
+find out.
+
+
+## How it works
+
+Under the covers, `x-ray` uses the high-performant [PyMuPDF project][mu] to parse PDFs.
+
+You can read the source to see how it works, but the general idea is to:
+
+1. Find rectangles in the PDF.
+
+2. Find letters that are under those rectangles.
+
+Things get tricky in a couple places:
+
+ - letters without [ascenders][asc] are taller than they seem and might not be entirely under the rectangle
+ - drawings in PDFs can contain multiple rectangles
+ - text under redactions can be on purpose (like if it says "XXX" or "privileged", etc)
+
+And so forth. We do our best.
+
+
+## Contributions
+
+Please see the issues list for thinsg we need, or start a conversation if you have questions. Before you do your first contribution, we'll need a signed contributor license agreement. See the template in the repo.
+
 
 ## Deployment
 
+Releases happen automatically via Github Actions on any commit that is tagged with something like "v0.0.0".
+
 If you wish to create a new version manually, the process is:
 
-1. Update version info in `setup.py`
+1. Update version info in `pyproject.toml`
 
-2. Install the requirements using `poetry install`
+2. Configure your Pypi credentials [with Poetry][creds]
 
-3. Set up a config file at `~/.pypirc`
-
-4. Generate a universal distribution that works in py2 and py3 (see setup.cfg)
+3. Build and publish the version:
 
 ```sh
-python setup.py sdist bdist_wheel
+poetry publish --build
 ```
 
-5. Upload the distributions
 
-```sh
-twine upload dist/* -r pypi (or pypitest)
-```
 
 ## License
 
 This repository is available under the permissive BSD license, making it easy and safe to incorporate in your own libraries.
 
-Pull and feature requests welcome. Online editing in GitHub is possible (and easy!)
+Pull and feature requests welcome. Online editing in GitHub is possible (and easy!).
+
+[jq]: https://stedolan.github.io/jq/
+[mu]: pymupdf.readthedocs.io/
+[asc]: https://en.wikipedia.org/wiki/Ascender_(typography)
+[creds]: https://python-poetry.org/docs/repositories/#configuring-credentials
