@@ -19,10 +19,13 @@ description = "A library and microservice to find bad redactions in PDFs"
 keywords = ["legal", "courts", "redactions"]
 license = "BSD-2-Clause"
 maintainers = ["Free Law Project <info@free.law>"]
-name = "PDF Redaction Detector"
+name = "x-ray"
+packages = [
+    {include = "xray"}
+]
 readme = "README.md"
 repository = "https://github.com/freelawproject/pdf-redaction-detector"
-version = "0.1.0"
+version = "0.1.1"
 
 [tool.poetry.urls]
 "Organisation Homepage" = "https://free.law/"
