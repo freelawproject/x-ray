@@ -159,3 +159,12 @@ class IntegrationTest(TestCase):
             {},
             msg="Got redaction even though none in document",
         )
+
+    def test_multiline_redaction(self):
+        path = root_path / "multi_line_redaction_ok.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions on a multiline redaction, but shouldn't have.",
+        )

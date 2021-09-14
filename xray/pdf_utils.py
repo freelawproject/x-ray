@@ -23,29 +23,59 @@ def get_good_rectangles(page: Page) -> List[Rect]:
     drawings = page.get_drawings()
     good_rectangles = []
     for drawing in drawings:
-        if drawing.get("rect") is None:
-            # Not a rectangle (ok, ok, tetrahedron, technically)
-            continue
-        if drawing["fill"] != (0.0,):
-            # Not black
+        if drawing.get("fill_opacity") is None or drawing["fill_opacity"] != 1:
+            # Not opaque. Probably a highlight or similar.
             continue
 
-        rectangle = drawing["rect"]
-
-        if rectangle.y1 <= 43:
-            # It's a header, ignore it
-            continue
-
-        if all(
-            [
-                # Eliminate horizontal lines
-                rectangle.height > 4,
-                # Eliminate vertical bars? Unsure what this is supposed to
-                # prevent?
-                rectangle.width > 4,
-            ]
+        if drawing["fill"] in (
+            1,  # Grayscale
+            (1.0,),  # Also grayscale
+            (1.0, 1.0, 1.0),  # RGB
+            (0.0, 0.0, 0.0, 0.0),  # CMYK
         ):
-            good_rectangles.append(rectangle)
+            # White box. These are used for various purposes like, with line
+            # number columns. Ignore them.
+            continue
+
+        # Each drawing can contain multiple "draw" commands that could be
+        # rectangles, lines, quads or curves. Each takes the form of a tuple,
+        # where the first item is the type for the object, then the rest of the
+        # items in the tuple define the object. In the case of rectangles, the
+        # type is "re", and the second key is a fitz.Rect object. Gather those
+        # here.
+        #
+        # N.B.: Each _drawing_ also contains a key for "rect" that defines a
+        # rectangle around the whole shape. Using that, however, you will get
+        # the outer dimensions of multi-line redactions, which will make you
+        # sad. For example:
+        #
+        # +----------------------------------------------------+
+        # | some visible letters █████████████████████████████ |
+        # | ████████████████████████████████ more letters here |
+        # +----------------------------------------------------+
+        #
+        # If you use the dimensions of the outer rectangle, you will wrongly
+        # say that the letters before and after the redaction are badly
+        # redacted. Instead, use the rectangles from the "items" key, which in
+        # the above example would yield two rectangles ("re" types).
+        rectangles = [item[1] for item in drawing["items"] if item[0] == "re"]
+
+        for rectangle in rectangles:
+            if rectangle.y1 <= 43:
+                # It's a header, ignore it
+                continue
+
+            if all(
+                [
+                    # Eliminate horizontal lines
+                    rectangle.height > 4,
+                    # Eliminate vertical lines, like those along margins.
+                    rectangle.width > 4,
+                ]
+            ):
+                if rectangle.is_infinite:
+                    rectangle.normalize()
+                good_rectangles.append(rectangle)
     return good_rectangles
 
 
