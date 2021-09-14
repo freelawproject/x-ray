@@ -22,17 +22,6 @@ root_path = Path(__file__).resolve().parent / "assets"
 class RectTest(TestCase):
     """Do our rectangle-finding utilities work properly?"""
 
-    def test_pymupdf_works_with_path_or_str(self):
-        path_str = "rectangles_yes.pdf"
-        paths = (
-            root_path / path_str,
-            os.path.join(str(root_path), path_str),
-        )
-        for path in paths:
-            with fitz.open(path) as pdf:
-                page = pdf[0]
-                self.assertTrue(get_good_rectangles(page))
-
     def test_we_find_rectangles_when_we_should(self):
         paths = (
             root_path / "rectangles_yes.pdf",
@@ -110,6 +99,28 @@ class OcclusionTest(TestCase):
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 0)
+
+
+class InspectApiTest(TestCase):
+    """Does the API of the inspect method work properly?"""
+
+    def test_inspect_works_with_path_or_str(self):
+        path_str = "rectangles_yes.pdf"
+        paths = (
+            root_path / path_str,
+            os.path.join(str(root_path), path_str),
+        )
+        for path in paths:
+            redactions = xray.inspect(path)
+            self.assertTrue(redactions)
+
+    def test_inspect_works_with_bytes(self):
+        path = root_path / "rectangles_yes.pdf"
+        with open(path, "rb") as f:
+            data = f.read()
+
+        redactions = xray.inspect(data)
+        self.assertTrue(redactions)
 
 
 class IntegrationTest(TestCase):

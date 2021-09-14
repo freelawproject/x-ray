@@ -84,6 +84,21 @@ pprint(bad_redactions)
 
 The output is the same as above, except it's a Python object, not a JSON object.
 
+If you already have the file contents as a `bytes` object, that'll work too:
+
+```python
+some_bytes = requests.get("https://lotr-secrets.com/some-doc.pdf").content
+bad_redactions = xray.inspect(some_bytes)
+```
+
+Note that because the `inspect` method uses the same signature no matter what,
+the type of the object you give it is essential. So if you do this, `xray` will
+assume your file name (provided as bytes) is file contents and it won't work:
+
+```python
+xray.inspect(b"some-file-path.pdf")
+```
+
 That's pretty much it. There are no configuration files or other variables to
 learn. You give it a file name. If there is a bad redaction in it, you'll soon
 find out.
