@@ -48,7 +48,7 @@ jobs:
         uses: isort/isort-action@v0.1.0
 
       - name: pylint Error Checker
-        run: pylint -E -f colorized x_ray
+        run: pylint -E -f colorized xray
 
       - name: mypy Static Type Checker
         run: mypy .
