@@ -125,7 +125,7 @@ And so forth. We do our best.
 
 ## Contributions
 
-Please see the issues list for thinsg we need, or start a conversation if you have questions. Before you do your first contribution, we'll need a signed contributor license agreement. See the template in the repo.
+Please see the issues list on Github for things we need, or start a conversation if you have questions. Before you do your first contribution, we'll need a signed contributor license agreement. See the template in the repo.
 
 
 ## Deployment
