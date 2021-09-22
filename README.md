@@ -4,7 +4,7 @@ x-ray is a Python library for finding bad redactions in PDF documents.
 
 ## Why?
 
-At Free Law Project, we collect millions of PDFs each day. An ongoing problem
+At Free Law Project, we collect millions of PDFs. An ongoing problem
 is that people fail to properly redact things. Instead of doing it the right
 way, they just draw a black rectangle or a black highlight on top of black
 text and call it a day. Well, when that happens you just select the text under
