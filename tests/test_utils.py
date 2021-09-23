@@ -100,6 +100,16 @@ class OcclusionTest(TestCase):
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 0)
 
+    def test_text_on_rectangles_ok(self):
+        """Is text on top of an opaque rectangles, wrongly marked as a bad
+        redaction?
+        """
+        path = root_path / "opaque_box_under_text.pdf"
+        with fitz.open(path) as pdf:
+            page = pdf[0]
+            chars = get_intersecting_chars(page, get_good_rectangles(page))
+        self.assertEqual(len(chars), 0)
+
 
 class InspectApiTest(TestCase):
     """Does the API of the inspect method work properly?"""
