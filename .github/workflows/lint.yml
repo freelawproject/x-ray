@@ -37,9 +37,6 @@ jobs:
       - name: Black Code Formatter
         uses: psf/black@stable
 
-      - name: Run flake8
-        uses: py-actions/flake8@v1
-
       - name: isort Import Sorter
         uses: isort/isort-action@v0.1.0
 
