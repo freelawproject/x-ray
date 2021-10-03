@@ -2,6 +2,8 @@
 
 from typing import Dict, List, Tuple, TypedDict
 
+from fitz import Rect
+
 
 class RedactionType(TypedDict):
     """A type for a redaction"""
@@ -18,5 +20,5 @@ class CharDictType(TypedDict):
     """A type for a character dictionary"""
 
     origin: Tuple[float, float]
-    bbox: Tuple[float, float, float, float]
+    rect: Rect
     c: str
