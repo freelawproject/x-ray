@@ -114,7 +114,11 @@ def intersects(
             overlapping_areas.append(intersecting_area)
             continue
         if intersecting_area > 0 and rect.color == text_rect.color:
-            # Intersecting and same color. This makes text invisible.
+            # Intersecting and same color. This makes text invisible. Note that
+            # colors in PyMuPDF can be in one of several colorspaces. If that's
+            # the case, you could compare something like 0.0 (grayscale) to
+            # (0, 0, 0) (RGB), and say they're different, when in fact they're
+            # the same. This would miss a bad redaction.
             overlapping_areas.append(intersecting_area)
             continue
 
@@ -204,18 +208,13 @@ def get_intersecting_chars(
                 color=span_color,
                 seqno=span_seq_no,
             )
-            if intersects(
-                char_rect,
-                rectangles,
-                occlusion_threshold=0.8,
-            ):
-                intersecting_chars.append(
-                    {
-                        "origin": origin,
-                        "rect": char_rect,
-                        "c": chr(char[0]),
-                    }
-                )
+            if intersects(char_rect, rectangles, occlusion_threshold=0.8):
+                char_dict: CharDictType = {
+                    "origin": origin,
+                    "rect": char_rect,
+                    "c": chr(char[0]),
+                }
+                intersecting_chars.append(char_dict)
 
     return intersecting_chars
 
