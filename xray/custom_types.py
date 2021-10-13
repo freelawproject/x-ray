@@ -19,6 +19,5 @@ PdfRedactionsDict = Dict[int, List[RedactionType]]
 class CharDictType(TypedDict):
     """A type for a character dictionary"""
 
-    origin: Tuple[float, float]
     rect: Rect
     c: str

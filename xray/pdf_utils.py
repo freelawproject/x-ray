@@ -134,55 +134,13 @@ def intersects(
     return False
 
 
-def make_rect_for_char(
-    origin: Tuple[float, float],
-    width: float,
-    font_size: float,
-    ascender: float,
-    descender: float,
-    color: float,
-    seqno: int,
-) -> Rect:
-    """Compute character bbox.
-
-    :param origin: An x-y pair of the location of the origin of the char
-    :param width: The width of the char
-    :param font_size: The size of the font
-    :param ascender: The height of the ascender
-    :param descender: The depth of the descender
-    :param color: The color of the text
-    :param seqno: The sequence number of the text
-    :returns a PyMuPDF.Rect object representing the bbox around the char.
-    """
-    x0 = origin[0]
-    x1 = x0 + width
-    y0 = origin[1] - ascender * font_size
-    y1 = origin[1] - descender * font_size
-    rect = fitz.Rect(x0, y0, x1, y1)
-    rect.color = color
-    rect.seqno = seqno
-    return rect
-
-
 def get_intersecting_chars(
     page: Page, rectangles: List[Rect]
 ) -> List[CharDictType]:
     """Get the chars that are occluded by the rectangles
 
-    PDF pages in PyMuPDF are broken up into blocks of text, those blocks
-    contain lines, the lines contain spans, and the spans contain characters.
-    Due to all this, what we do here is start with the biggest object, then
-    drill down and filter iteratively until we have just the chars we want.
-
-    We start with the block objects and check if any of them intersect with the
-    rectangles. If so, we continue with those. Then we do the same for lines,
-    then spans, then characters. The idea here is that we avoid looking for
-    intersections in every danged character, by eliminating blocks that don't
-    intersect, then lines that don't, then spans that don't, then chars that
-    don't.
-
-    Along the way, we do a couple extra filters, like looking for black text,
-    etc.
+    We do this in two stages. First, we check for intersecting spans, then we
+    check for intersecting chars within those spans. The idea of this is
 
     :param page: The PyMuPDF.Page object to inspect
     :param rectangles: A list of PyMuPDF.Rect objects from the page (aka the
@@ -192,25 +150,22 @@ def get_intersecting_chars(
     if len(rectangles) == 0:
         return []
 
-    spans = page._get_texttrace()
+    spans = page.get_texttrace()
     intersecting_chars = []
     for span in spans:
         span_seq_no = span["seqno"]
         span_color = span["color"]
+        span_rect = fitz.Rect(span["bbox"])
+        span_rect.seqno = span_seq_no
+        span_rect.color = span_color
+        if not intersects(span_rect, rectangles):
+            continue
         for char in span["chars"]:
-            origin = char[2]
-            char_rect = make_rect_for_char(
-                origin=origin,
-                width=char[3],
-                font_size=span["size"],
-                ascender=span["ascender"],
-                descender=span["descender"],
-                color=span_color,
-                seqno=span_seq_no,
-            )
+            char_rect = fitz.Rect(char[3])
+            char_rect.seqno = span_seq_no
+            char_rect.color = span_color
             if intersects(char_rect, rectangles, occlusion_threshold=0.8):
                 char_dict: CharDictType = {
-                    "origin": origin,
                     "rect": char_rect,
                     "c": chr(char[0]),
                 }
