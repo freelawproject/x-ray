@@ -105,6 +105,11 @@ def intersects(
     :return True if any part of the bbox intersects with any of the rectangles,
     else False.
     """
+    for rect in rectangles + [text_rect]:
+        assert all(
+            [hasattr(rect, "seqno"), hasattr(rect, "color")]
+        ), "Rectangle lacks required 'seqno' or 'color' attribute."
+
     overlapping_areas = []
     for rect in rectangles:
         intersecting_area = abs(text_rect & rect)
