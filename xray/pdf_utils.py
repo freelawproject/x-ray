@@ -3,7 +3,6 @@ Utilities for working with PDFs and redactions
 """
 import re
 import typing
-from itertools import chain
 from typing import List, Tuple
 
 import fitz
@@ -17,8 +16,12 @@ def get_good_rectangles(page: Page) -> List[Rect]:
     """Find rectangles in the PDFs that might be redactions.
 
     :param page: The PyMuPDF Page to look for rectangles within.
-    :returns A list of PyMUPDF.Rect objects for each black rectangle that's
-    big enough to be a possible redaction. If none, returns an empty list.
+    :returns A list of PyMUPDF.Rect objects for each non-white, fully opaque
+    rectangle that's big enough to be a possible redaction. If none, returns
+    an empty list. Also enhances the Rect object by including the sequence
+    number and fill color of the parent drawing. This allows us to later
+    determine if a letter is above or below a rectangle or whether it's the
+    same color.
     """
     drawings = page.get_drawings()
     good_rectangles = []
@@ -28,10 +31,10 @@ def get_good_rectangles(page: Page) -> List[Rect]:
             continue
 
         if drawing["fill"] in (
-            1,  # Grayscale
+            1,  # White background in grayscale
             (1.0,),  # Also grayscale
-            (1.0, 1.0, 1.0),  # RGB
-            (0.0, 0.0, 0.0, 0.0),  # CMYK
+            (1.0, 1.0, 1.0),  # White in RGB
+            (0.0, 0.0, 0.0, 0.0),  # White in CMYK
         ):
             # White box. These are used for various purposes like, with line
             # number columns. Ignore them.
@@ -61,6 +64,9 @@ def get_good_rectangles(page: Page) -> List[Rect]:
         rectangles = [item[1] for item in drawing["items"] if item[0] == "re"]
 
         for rectangle in rectangles:
+            # Give it the sequence number and color of its parent drawing
+            rectangle.seqno = drawing["seqno"]
+            rectangle.color = drawing["fill"]
             if rectangle.y1 <= 43:
                 # It's a header, ignore it
                 continue
@@ -80,60 +86,52 @@ def get_good_rectangles(page: Page) -> List[Rect]:
 
 
 def intersects(
-    bbox: Tuple[float, ...],
+    text_rect: Rect,
     rectangles: List[Rect],
     occlusion_threshold: float = 0.0,
 ) -> bool:
-    """Determine if a bbox intersects with any of a list of rectangles
+    """Determine if a rectangle intersects is occluded by a list of others
 
-    :param bbox: A four-tuple of floats denoting a bounding box of a rectangle.
-    The first two floats represent the upper left corner, and the second two
-    are the bottom right. Note that the Y-axis is reversed so it starts at the
-    top of the page, not the bottom left.
-    :param rectangles: A list of PyMuPDF.Rect objects
-    :param occlusion_threshold: How much the bbox must be occluded by at least
-    one of the rectangles for it to be considered an intersection, as a
+    This uses Rect objects, but note that they must have extra attributes of
+    "color" and "seqno".
+
+    :param text_rect: The rectangle around the text to check for intersections.
+    :param rectangles: A list of rectangles to check for intersections.
+    :param occlusion_threshold: How much the rectangle must be occluded by at
+    least one of the rectangles for it to be considered an intersection, as a
     percentage. E.g., 1.0 means that the bbox must be fully occluded, 0.10
     means it must be 10% occluded. The default, 0.0, means they must intersect
     at least a little.
     :return True if any part of the bbox intersects with any of the rectangles,
     else False.
     """
+    for rect in rectangles + [text_rect]:
+        assert all(
+            [hasattr(rect, "seqno"), hasattr(rect, "color")]
+        ), "Rectangle lacks required 'seqno' or 'color' attribute."
+
     overlapping_areas = []
     for rect in rectangles:
-        # The overlapping area of two rectangles is defined by the product of
-        # the length of their vertical and horizontal intersections.
-        # See: https://stackoverflow.com/a/52194761/64911, in particular the
-        # image that shows the bolded horizontal and vertical lines that get
-        # multiplied.
-        #
-        # As a formula, this takes the form of:
-        #
-        #   A = max(0, min(r0, r1) - max(l0, l1)) *   # horizontal intersection
-        #         max(0, min(b0, b1) - max(t0, t1))   # vertical intersection
-        bbox_left, bbox_top, bbox_right, bbox_bottom = (
-            bbox[0],
-            bbox[1],
-            bbox[2],
-            bbox[3],
-        )
-        rect_left, rect_top, rect_right, rect_bottom = (
-            rect.x0,
-            rect.y0,
-            rect.x1,
-            rect.y1,
-        )
-        vertical_intersection = max(
-            0.0, min(bbox_bottom, rect_bottom) - max(bbox_top, rect_top)
-        )
-        horizontal_intersection = max(
-            0.0, min(bbox_right, rect_right) - max(bbox_left, rect_left)
-        )
-        overlapping_area = horizontal_intersection * vertical_intersection
-        overlapping_areas.append(overlapping_area)
+        intersecting_area = abs(text_rect & rect)
+        if intersecting_area > 0 and rect.seqno > text_rect.seqno:
+            # Intersecting and text was drawn first,
+            # meaning it's behind the drawing.
+            overlapping_areas.append(intersecting_area)
+            continue
+        if intersecting_area > 0 and rect.color == text_rect.color:
+            # Intersecting and same color. This makes text invisible. Note that
+            # colors in PyMuPDF can be in one of several colorspaces. If that's
+            # the case, you could compare something like 0.0 (grayscale) to
+            # (0, 0, 0) (RGB), and say they're different, when in fact they're
+            # the same. This would miss a bad redaction.
+            overlapping_areas.append(intersecting_area)
+            continue
+
+    if not overlapping_areas:
+        return False
 
     greatest_occluded = max(overlapping_areas)
-    area_of_bbox = Rect(*bbox).get_area()
+    area_of_bbox = abs(text_rect.get_area())
 
     percent_occluded = greatest_occluded / area_of_bbox
     if percent_occluded > occlusion_threshold:
@@ -146,20 +144,8 @@ def get_intersecting_chars(
 ) -> List[CharDictType]:
     """Get the chars that are occluded by the rectangles
 
-    PDF pages in PyMuPDF are broken up into blocks of text, those blocks
-    contain lines, the lines contain spans, and the spans contain characters.
-    Due to all this, what we do here is start with the biggest object, then
-    drill down and filter iteratively until we have just the chars we want.
-
-    We start with the block objects and check if any of them intersect with the
-    rectangles. If so, we continue with those. Then we do the same for lines,
-    then spans, then characters. The idea here is that we avoid looking for
-    intersections in every danged character, by eliminating blocks that don't
-    intersect, then lines that don't, then spans that don't, then chars that
-    don't.
-
-    Along the way, we do a couple extra filters, like looking for black text,
-    etc.
+    We do this in two stages. First, we check for intersecting spans, then we
+    check for intersecting chars within those spans. The idea of this is
 
     :param page: The PyMuPDF.Page object to inspect
     :param rectangles: A list of PyMuPDF.Rect objects from the page (aka the
@@ -169,44 +155,28 @@ def get_intersecting_chars(
     if len(rectangles) == 0:
         return []
 
-    blocks = page.get_text(
-        "rawdict",
-        flags=fitz.TEXT_PRESERVE_LIGATURES
-        | fitz.TEXT_PRESERVE_WHITESPACE
-        | fitz.TEXT_DEHYPHENATE,
-    )["blocks"]
+    spans = page.get_texttrace()
+    intersecting_chars = []
+    for span in spans:
+        span_seq_no = span["seqno"]
+        span_color = span["color"]
+        span_rect = fitz.Rect(span["bbox"])
+        span_rect.seqno = span_seq_no
+        span_rect.color = span_color
+        if not intersects(span_rect, rectangles):
+            continue
+        for char in span["chars"]:
+            char_rect = fitz.Rect(char[3])
+            char_rect.seqno = span_seq_no
+            char_rect.color = span_color
+            if intersects(char_rect, rectangles, occlusion_threshold=0.8):
+                char_dict: CharDictType = {
+                    "rect": char_rect,
+                    "c": chr(char[0]),
+                }
+                intersecting_chars.append(char_dict)
 
-    # Filter blocks with lines that intersect
-    good_blocks = filter(lambda block: "lines" in block, blocks)
-    intersecting_blocks = filter(
-        lambda block: intersects(block["bbox"], rectangles),
-        good_blocks,
-    )
-
-    # Filter to intersecting lines
-    lines = chain(*[block["lines"] for block in intersecting_blocks])
-    intersecting_lines = filter(
-        lambda line: intersects(line["bbox"], rectangles),
-        lines,
-    )
-
-    # Filter to intersecting spans that are black
-    spans = chain(*[line["spans"] for line in intersecting_lines])
-    good_spans = filter(lambda span: span["color"] == 0, spans)
-    intersecting_spans = filter(
-        lambda span: intersects(span["bbox"], rectangles),
-        good_spans,
-    )
-
-    # Get a flat list of intersecting chars
-    chars = chain(*[span["chars"] for span in intersecting_spans])
-    intersecting_chars = filter(
-        lambda char: intersects(
-            char["bbox"], rectangles, occlusion_threshold=0.8
-        ),
-        chars,
-    )
-    return list(intersecting_chars)
+    return intersecting_chars
 
 
 def group_chars_by_rect(
@@ -231,7 +201,7 @@ def group_chars_by_rect(
             "text": "",
         }
         for char in chars:
-            if Rect(*char["bbox"]) & rect:
+            if char["rect"] & rect:
                 redaction["text"] += char["c"]
         redactions.append(redaction)
 

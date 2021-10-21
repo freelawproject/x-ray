@@ -3,6 +3,7 @@ X-Ray Tests
 """
 import os
 from pathlib import Path
+from typing import Tuple
 from unittest import TestCase
 
 import fitz
@@ -39,17 +40,32 @@ class RectTest(TestCase):
             self.assertFalse(get_good_rectangles(page))
 
 
+def make_rectangle(bbox: Tuple[float, ...], seqno: int, color: float) -> Rect:
+    """Factory for making little rectangles with extra attributes"""
+    r = Rect(*bbox)
+    r.seqno = seqno
+    r.color = color
+    return r
+
+
 class IntersectionTest(TestCase):
     """Do rectangles intersect properly?"""
 
-    bbox = (1, 1, 2, 2)
+    rect = make_rectangle(
+        (1, 1, 2, 2),
+        seqno=0,  # All other rectangles are on top!
+        color=1,
+    )
 
     def test_in_one_of_many(self):
         """Does a bbox inside of one, but not all rectangles intersect?"""
         self.assertTrue(
             intersects(
-                self.bbox,
-                [Rect(0.5, 0.5, 3, 3), Rect(3, 3, 4, 4)],
+                self.rect,
+                [
+                    make_rectangle((0.5, 0.5, 3, 3), 1, 1),
+                    make_rectangle((3, 3, 4, 4), 1, 1),
+                ],
             )
         )
 
@@ -57,8 +73,11 @@ class IntersectionTest(TestCase):
         """Do we return False when things don't intersect?"""
         self.assertFalse(
             intersects(
-                self.bbox,
-                [Rect(3, 3, 4, 4), Rect(4, 4, 5, 5)],
+                self.rect,
+                [
+                    make_rectangle((3, 3, 4, 4), 1, 1),
+                    make_rectangle((4, 4, 5, 5), 1, 1),
+                ],
             )
         )
 
@@ -66,14 +85,22 @@ class IntersectionTest(TestCase):
         """Do we return True when the bbox is in all the rects?"""
         self.assertTrue(
             intersects(
-                self.bbox,
-                [Rect(0.5, 0.5, 3, 3), Rect(0.6, 0.6, 4, 4)],
+                self.rect,
+                [
+                    make_rectangle((0.5, 0.5, 3, 3), 1, 1),
+                    make_rectangle((0.6, 0.6, 4, 4), 1, 1),
+                ],
             )
         )
 
     def test_partial_intersection(self):
         """Do we return true when only corners intersect?"""
-        self.assertTrue(intersects(self.bbox, [Rect(0.5, 0.5, 1.5, 1.5)]))
+        self.assertTrue(
+            intersects(
+                self.rect,
+                [make_rectangle((0.5, 0.5, 1.5, 1.5), 1, 1)],
+            )
+        )
 
 
 class OcclusionTest(TestCase):
@@ -95,6 +122,16 @@ class OcclusionTest(TestCase):
 
     def test_ignoring_partial_occlusions(self):
         path = root_path / "partial_intersections_ok.pdf"
+        with fitz.open(path) as pdf:
+            page = pdf[0]
+            chars = get_intersecting_chars(page, get_good_rectangles(page))
+        self.assertEqual(len(chars), 0)
+
+    def test_text_on_rectangles_ok(self):
+        """Is text on top of an opaque rectangles, wrongly marked as a bad
+        redaction?
+        """
+        path = root_path / "opaque_box_under_text.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
