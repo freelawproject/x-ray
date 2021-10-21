@@ -131,7 +131,12 @@ Please see the issues list on Github for things we need, or start a conversation
 
 ## Deployment
 
-Releases happen automatically via Github Actions on any commit that is tagged with something like "v0.0.0".
+Releases happen automatically via Github Actions. To trigger an automated build:
+
+1. Update the version in pyproject.toml
+
+2. Tag the commit with something like "v0.0.0".
+
 
 If you wish to create a new version manually, the process is:
 
