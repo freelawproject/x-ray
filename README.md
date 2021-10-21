@@ -119,6 +119,7 @@ Things get tricky in a couple places:
  - letters without [ascenders][asc] are taller than they seem and might not be entirely under the rectangle
  - drawings in PDFs can contain multiple rectangles
  - text under redactions can be on purpose (like if it says "XXX" or "privileged", etc)
+ - text on top of rectangles is very common in forms, so we use the draw order of the PDF to detect this
 
 And so forth. We do our best.
 
