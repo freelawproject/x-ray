@@ -218,6 +218,16 @@ class IntegrationTest(TestCase):
                 "whitespace-filled redactions.",
             )
 
+    def test_unfilled_rect(self):
+        """Do unfilled boxes (with only borders and no fill) get ignored?"""
+        path = root_path / "unfilled_rect.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions 'under' an unfilled rectangle.",
+        )
+
     def test_ok_words_not_redacted(self):
         path = root_path / "ok_words.pdf"
         redactions = xray.inspect(path)

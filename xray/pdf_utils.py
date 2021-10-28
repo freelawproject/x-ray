@@ -31,13 +31,17 @@ def get_good_rectangles(page: Page) -> List[Rect]:
             continue
 
         if drawing["fill"] in (
-            1,  # White background in grayscale
+            # Unfilled box (transparent to the eye, but distinct from ones that
+            # have opacity of 0).
+            None,
+            # Various ways of saying white in different palates.
+            1,  # grayscale
             (1.0,),  # Also grayscale
-            (1.0, 1.0, 1.0),  # White in RGB
-            (0.0, 0.0, 0.0, 0.0),  # White in CMYK
+            (1.0, 1.0, 1.0),  # RGB
+            (0.0, 0.0, 0.0, 0.0),  # CMYK
         ):
-            # White box. These are used for various purposes like, with line
-            # number columns. Ignore them.
+            # White or unfilled box. These are used for various purposes
+            # like, with line number columns, borders, etc. Ignore them.
             continue
 
         # Each drawing can contain multiple "draw" commands that could be
