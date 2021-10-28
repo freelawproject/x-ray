@@ -40,7 +40,9 @@ class RectTest(TestCase):
             self.assertFalse(get_good_rectangles(page))
 
 
-def make_rectangle(bbox: Tuple[float, ...], seqno: int, color: float) -> Rect:
+def rectangle_factory(
+    bbox: Tuple[float, ...], seqno: int, color: float
+) -> Rect:
     """Factory for making little rectangles with extra attributes"""
     r = Rect(*bbox)
     r.seqno = seqno
@@ -51,7 +53,7 @@ def make_rectangle(bbox: Tuple[float, ...], seqno: int, color: float) -> Rect:
 class IntersectionTest(TestCase):
     """Do rectangles intersect properly?"""
 
-    rect = make_rectangle(
+    rect = rectangle_factory(
         (1, 1, 2, 2),
         seqno=0,  # All other rectangles are on top!
         color=1,
@@ -63,8 +65,8 @@ class IntersectionTest(TestCase):
             intersects(
                 self.rect,
                 [
-                    make_rectangle((0.5, 0.5, 3, 3), 1, 1),
-                    make_rectangle((3, 3, 4, 4), 1, 1),
+                    rectangle_factory((0.5, 0.5, 3, 3), 1, 1),
+                    rectangle_factory((3, 3, 4, 4), 1, 1),
                 ],
             )
         )
@@ -75,8 +77,8 @@ class IntersectionTest(TestCase):
             intersects(
                 self.rect,
                 [
-                    make_rectangle((3, 3, 4, 4), 1, 1),
-                    make_rectangle((4, 4, 5, 5), 1, 1),
+                    rectangle_factory((3, 3, 4, 4), 1, 1),
+                    rectangle_factory((4, 4, 5, 5), 1, 1),
                 ],
             )
         )
@@ -87,8 +89,8 @@ class IntersectionTest(TestCase):
             intersects(
                 self.rect,
                 [
-                    make_rectangle((0.5, 0.5, 3, 3), 1, 1),
-                    make_rectangle((0.6, 0.6, 4, 4), 1, 1),
+                    rectangle_factory((0.5, 0.5, 3, 3), 1, 1),
+                    rectangle_factory((0.6, 0.6, 4, 4), 1, 1),
                 ],
             )
         )
@@ -98,7 +100,7 @@ class IntersectionTest(TestCase):
         self.assertTrue(
             intersects(
                 self.rect,
-                [make_rectangle((0.5, 0.5, 1.5, 1.5), 1, 1)],
+                [rectangle_factory((0.5, 0.5, 1.5, 1.5), 1, 1)],
             )
         )
 
