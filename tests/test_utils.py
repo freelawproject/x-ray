@@ -131,11 +131,29 @@ class OcclusionTest(TestCase):
         """Is text on top of an opaque rectangles, wrongly marked as a bad
         redaction?
         """
-        path = root_path / "opaque_box_under_text.pdf"
-        with fitz.open(path) as pdf:
-            page = pdf[0]
-            chars = get_intersecting_chars(page, get_good_rectangles(page))
-        self.assertEqual(len(chars), 0)
+        # Files selected randomly. Each is numbered sequentially. The number
+        # represents the page number from the original doc that these are
+        # sampled from.
+        paths = (
+            "rect_ordering_0.8.pdf",
+            "rect_ordering_1.23.pdf",
+            "rect_ordering_2.1.pdf",
+            "rect_ordering_3.20.pdf",
+            "rect_ordering_4.1.pdf",
+            "rect_ordering_5.2.pdf",
+            "rect_ordering_6.19.pdf",
+        )
+        for path in paths:
+            path = root_path / path
+            with self.subTest(f"{path=}"):
+                with fitz.open(path) as pdf:
+                    page = pdf[0]
+                    chars = get_bad_redactions(page)
+                self.assertEqual(
+                    len(chars),
+                    0,
+                    msg=f"Got bad redaction when no redaction present: {chars}",
+                )
 
 
 class InspectApiTest(TestCase):
@@ -185,6 +203,7 @@ class IntegrationTest(TestCase):
         )
 
     def test_whitespace_only_redaction_no_results(self):
+        """Do we ignore redactions containing only whitespace chars?"""
         paths = (
             "whitespace_redactions.pdf",
             "whitespace_redactions_2.pdf",
