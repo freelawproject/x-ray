@@ -34,11 +34,8 @@ def get_good_rectangles(page: Page) -> List[Rect]:
             # Unfilled box (transparent to the eye, but distinct from ones that
             # have opacity of 0).
             None,
-            # Various ways of saying white in different palates.
-            1,  # grayscale
-            (1.0,),  # Also grayscale
-            (1.0, 1.0, 1.0),  # RGB
-            (0.0, 0.0, 0.0, 0.0),  # CMYK
+            # White
+            (1.0, 1.0, 1.0),
         ):
             # White or unfilled box. These are used for various purposes
             # like, with line number columns, borders, etc. Ignore them.
@@ -123,11 +120,7 @@ def intersects(
             overlapping_areas.append(intersecting_area)
             continue
         if intersecting_area > 0 and rect.color == text_rect.color:
-            # Intersecting and same color. This makes text invisible. Note that
-            # colors in PyMuPDF can be in one of several colorspaces. If that's
-            # the case, you could compare something like 0.0 (grayscale) to
-            # (0, 0, 0) (RGB), and say they're different, when in fact they're
-            # the same. This would miss a bad redaction.
+            # Intersecting and same color. This makes text invisible.
             overlapping_areas.append(intersecting_area)
             continue
 
