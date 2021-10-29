@@ -196,13 +196,16 @@ class IntegrationTest(TestCase):
         self.assertTrue(len(redactions[1]) == 3)
 
     def test_empty_pages_no_results(self):
-        path = root_path / "no_bad_redactions.pdf"
-        redactions = xray.inspect(path)
-        self.assertEqual(
-            redactions,
-            {},
-            msg="Didn't get empty dict when there were no redactions.",
-        )
+        paths = ("no_bad_redactions.1.1.pdf",)
+        for path in paths:
+            path = root_path / path
+            with self.subTest(f"{path=}"):
+                redactions = xray.inspect(path)
+                self.assertEqual(
+                    redactions,
+                    {},
+                    msg="Didn't get empty dict when there were no redactions.",
+                )
 
     def test_whitespace_only_redaction_no_results(self):
         """Do we ignore redactions containing only whitespace chars?"""

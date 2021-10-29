@@ -3,11 +3,12 @@ Utilities for working with PDFs and redactions
 """
 import re
 import typing
-from typing import List, Tuple
+from typing import List
 
 import fitz
 from fitz import Page, Rect
 
+from .color_utils import is_white
 from .custom_types import CharDictType, RedactionType
 from .text_utils import is_ok_words, is_repeated_chars
 
@@ -30,15 +31,14 @@ def get_good_rectangles(page: Page) -> List[Rect]:
             # Not opaque. Probably a highlight or similar.
             continue
 
-        if drawing["fill"] in (
+        if drawing["fill"] is None:
             # Unfilled box (transparent to the eye, but distinct from ones that
             # have opacity of 0).
-            None,
-            # White
-            (1.0, 1.0, 1.0),
-        ):
-            # White or unfilled box. These are used for various purposes
-            # like, with line number columns, borders, etc. Ignore them.
+            continue
+
+        if is_white(drawing["fill"]):
+            # White box. These are used for various purposes like, with line
+            # number columns, borders, etc. Ignore them.
             continue
 
         # Each drawing can contain multiple "draw" commands that could be
