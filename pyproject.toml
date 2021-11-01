@@ -35,7 +35,7 @@ python = "^3.8"
 PyMuPDF = "^1.19.0"
 
 [tool.poetry.dev-dependencies]
-black = "^21.9b0"
+black = "^21.10b0"
 isort = "^5.8.0"
 mypy = "^0.910"
 pylint = "^2.7.1"
