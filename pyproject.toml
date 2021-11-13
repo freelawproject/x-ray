@@ -34,6 +34,7 @@ version = "0.3.1"
 python = "^3.8"
 PyMuPDF = "1.19.1"
 requests = "^2.26.0"
+types-requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.10b0"
