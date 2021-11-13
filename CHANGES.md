@@ -1,5 +1,15 @@
 ## Change Log
 
+### v0.3.2, 2021-11-12
+
+Makes xray installable. You can now do this:
+
+```
+xray path/to/some/file.pdf
+```
+
+And it'll return JSON like usual.
+
 
 ### v0.3.1, 2021-11-12
 
