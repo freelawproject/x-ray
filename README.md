@@ -57,6 +57,14 @@ You can easily use this on the command line. Once installed, just:
 }
 ```
 
+Or if you have hte file on a server somewhere, give it a URL. If it starts
+with `https://`, it will be interpreted as a PDF to download:
+
+```bash
+% python -m xray https://free.law/pdf/congressional-testimony-michael-lissner-free-law-project-hearing-on-ethics-and-transparency-2021-10-26.pdf
+{}
+```
+
 That'll give you json, so you can use it with tools like [`jq`][jq]. The format is as follows:
 
  - It's a dict.
@@ -73,7 +81,7 @@ If you want a bit more, you can use `x-ray` in Python:
 ```python
 from pprint import pprint
 import xray
-bad_redactions = xray.inspect("some/path/to/your/file.pdf")
+bad_redactions = xray.inspect("some/path/to/your/file.pdf")  # Pathlib works too
 pprint(bad_redactions)
 {1: [{'bbox': (58.550079345703125,
                72.19873046875,
@@ -92,8 +100,16 @@ bad_redactions = xray.inspect(some_bytes)
 ```
 
 Note that because the `inspect` method uses the same signature no matter what,
-the type of the object you give it is essential. So if you do this, `xray` will
-assume your file name (provided as bytes) is file contents and it won't work:
+the type of the object you give it is essential:
+
+Input | `xray`'s Assumption
+-- | --
+`str` or Pathlib `Path` | local file
+`str` that starts with `https://` | URL to download
+`bytes` | PDF in memory
+
+This means that if you provide the filename on disk as a bytes object instead
+of a `str`, it's not going to work. This will fail:
 
 ```python
 xray.inspect(b"some-file-path.pdf")
@@ -106,23 +122,19 @@ find out.
 
 ## How it works
 
-Under the covers, `x-ray` uses the high-performant [PyMuPDF project][mu] to parse PDFs.
+Under the covers, `xray` uses the high-performant [PyMuPDF project][mu] to parse PDFs. It has been a wonderful project to work with.
 
 You can read the source to see how it works, but the general idea is to:
 
-1. Find rectangles in the PDF.
+1. Find rectangles in a PDF.
 
-2. Find letters that are under those rectangles.
+2. Find letters in the same location
 
-Things get tricky in a couple places:
+3. Render the rectangle
 
- - letters without [ascenders][asc] are taller than they seem and might not be entirely under the rectangle
- - drawings in PDFs can contain multiple rectangles
- - text under redactions can be on purpose (like if it says "XXX" or "privileged", etc)
- - text on top of rectangles is very common in forms, so we use the draw order of the PDF to detect this
+4. Inspect the rectangle to see if it's all one color
 
-And so forth. We do our best.
-
+The PDF format is a big and complicated one, so it's difficult to do all this l and perfectly. We do our best, but there's always more to do to make it better. Donations and sponsored work help.
 
 ## Contributions
 

@@ -5,6 +5,7 @@ Find bad redactions.
 from pathlib import Path
 from typing import Union
 
+import requests
 from fitz import Document
 
 from .custom_types import PdfRedactionsDict
@@ -16,7 +17,7 @@ def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
     Inspect a file for bad redactions and return a Dict with their info
 
     :file: The PDF to process, as bytes if you have the file in memory (useful
-    if it's coming from the network),, as a unicode string if you know the
+    if it's coming from the network), as a unicode string if you know the
     path to the file on your local disk, or as a pathlib.Path object.
     :return: A dict with the bad redaction information. If no bad redactions
     are found, returns an empty dict.
@@ -24,7 +25,12 @@ def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
     if type(file) == bytes:
         pdf = Document(stream=file, filetype="pdf")
     else:
-        pdf = Document(file)
+        if file.startswith("https://"):
+            r = requests.get(file, timeout=10)
+            r.raise_for_status()
+            pdf = Document(stream=r.content, filetype="pdf")
+        else:
+            pdf = Document(file)
 
     bad_redactions = {}
     for page_number, page in enumerate(pdf, start=1):
