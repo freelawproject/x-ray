@@ -1,7 +1,7 @@
 """
 Find bad redactions.
 """
-
+import sys
 from pathlib import Path
 from typing import Union
 
@@ -24,13 +24,13 @@ def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
     """
     if type(file) == bytes:
         pdf = Document(stream=file, filetype="pdf")
+    elif type(file) == str and file.startswith("https://"):
+        r = requests.get(file, timeout=10)
+        r.raise_for_status()
+        pdf = Document(stream=r.content, filetype="pdf")
     else:
-        if file.startswith("https://"):
-            r = requests.get(file, timeout=10)
-            r.raise_for_status()
-            pdf = Document(stream=r.content, filetype="pdf")
-        else:
-            pdf = Document(file)
+        # str filepath or Pathlib Path
+        pdf = Document(file)
 
     bad_redactions = {}
     for page_number, page in enumerate(pdf, start=1):
