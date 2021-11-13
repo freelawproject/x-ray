@@ -2,6 +2,7 @@
 X-Ray Tests
 """
 import os
+import unittest
 from pathlib import Path
 from typing import Tuple
 from unittest import TestCase
@@ -29,7 +30,7 @@ class RectTest(TestCase):
             root_path / "rectangles_yes_2.pdf",
         )
         for path in paths:
-            with fitz.open(path) as pdf:
+            with fitz.open(path) as pdf, self.subTest(f"{path=}"):
                 page = pdf[0]
                 self.assertTrue(get_good_rectangles(page))
 
@@ -128,6 +129,28 @@ class OcclusionTest(TestCase):
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 0)
+
+    @unittest.expectedFailure
+    def test_overlapping_text(self):
+        """Do we find bad redactions with visible text below them?
+
+        This test case is a nasty one. If you look closely at LLC with your
+        cursor or, even better, at TROPPER in the heading, you'll see that
+        there is hidden text on top of the visible text. TROPPER is fun because
+        the hidden text is the correctly spelled word, "TROOPER."
+
+        Anyway, for now we don't support this at all, because our pixmap
+        approach sees the visible text below the hidden text, and thinks that
+        there's no bad redaction there. Someday, we should fix this, but it
+        seems very difficult.
+        """
+        path = root_path / "hidden_text_on_visible_text.pdf"
+        redactions = xray.inspect(path)
+        expected_redaction_count = 2
+        self.assertEqual(
+            len(list(redactions.values())),
+            expected_redaction_count,
+        )
 
     def test_text_on_rectangles_ok(self):
         """Is text on top of an opaque rectangles, wrongly marked as a bad
