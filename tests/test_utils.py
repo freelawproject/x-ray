@@ -218,8 +218,74 @@ class IntegrationTest(TestCase):
         redactions = xray.inspect(self.path)
         self.assertTrue(len(redactions[1]) == 3)
 
-    def test_empty_pages_no_results(self):
-        paths = ("no_bad_redactions.1.1.pdf",)
+    def test_tricky_rectangles(self):
+        """Check that tricky PDFs don't create false positives.
+
+        These are a variety of tough cases that don't have redactions, but
+        which can appear to due to their complexity. When our approach uses
+        only rectangles and text from parsing the PDF, each of these examples
+        comes back as a false positive. To fix this, we render the relevant
+        part of the document as a pixmap and then analyze that for more than
+        one color in the box. If we see multiple colors, we know that it's not
+        a bad redaction.
+
+        Note that any of these weird PDFs can be inspected with:
+
+            mutools trace some-doc.pdf
+        """
+        self.maxDiff = None
+
+        # The first digit in these file names is just a counter for the
+        # example. The second is the page in the original it was pulled from
+        # or the page in the current one (if multi-page) where it caused an
+        # issue.
+        paths = (
+            # The red rectangles in this document are complicated due to
+            # non-zero winding rules:
+            #
+            #   https://en.wikipedia.org/wiki/Nonzero-rule
+            #
+            # In short, when paths in a drawing overlap, you need a method of
+            # figuring out which enclosed parts of the drawing are filled
+            # (inside the drawing), and which are not (outside the drawing).
+            #
+            # PyMuPDF doesn't have a way of determining that at present, so
+            # when we look at the two squares in this PDF, it looks like the
+            # text that the squares surround is inside of them. That's
+            # intuitively true, but due to the winding rules, the surrounded
+            # part is actually not inside the drawing, and that's why that part
+            # of the rectangles is transparent, not red. In fact, the center of
+            # the rectangle is outside of the drawing, and despite the drawing
+            # and the text occupying the same x-y space, one does not occlude
+            # the other (note that you can plainly see the text).
+            #
+            # More discussion: https://github.com/pymupdf/PyMuPDF/issues/1355
+            "no_bad_redactions.2.1.pdf",
+            "no_bad_redactions.3.1.pdf",
+            # A white rectangle in this drawing occupies the same location as
+            # the text across the top due clipping paths.
+            #
+            # See: https://github.com/pymupdf/PyMuPDF/issues/1387
+            "no_bad_redactions.3.2.pdf",
+            "no_bad_redactions.4.1.pdf",
+            # Lots of messy stuff starting on page five. The word "Article"
+            # says it's white, but it appears black when rendered. Don't know
+            # why. Yanking off page 5 using pdftk changes the structure of this
+            # one, so it gets to have multiple pages in the test case.
+            "no_bad_redactions.5.5.pdf",
+            "no_bad_redactions.6.2.pdf",
+            # The JS-6 rectangle causes issues
+            "no_bad_redactions.7.1.pdf",
+            # This one has a big image covering literally everything else, and
+            # the image appears to have black rectangles. This doesn't have bad
+            # redactions b/c the text under the image is just dates, which are
+            # fine. Each text box appears to be wrapped in four lines forming
+            # a visible rectangle (but not a Rect object). This test case is
+            # important for if we ever start dealing with images in the PDFs,
+            # because it should continue *not* having bad redactions. (That'll
+            # need to be fixed by handling dates though, probably.)
+            "no_bad_redactions.8.1.pdf",
+        )
         for path in paths:
             path = root_path / path
             with self.subTest(f"{path=}"):
