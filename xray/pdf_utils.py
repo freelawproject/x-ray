@@ -1,16 +1,20 @@
 """
 Utilities for working with PDFs and redactions
 """
+import random
 import re
+import statistics
 import typing
 from typing import List
 
 import fitz
 from fitz import Page, Rect
 
-from .color_utils import is_white
 from .custom_types import CharDictType, RedactionType
 from .text_utils import is_ok_words, is_repeated_chars
+
+# Disable anti-aliasing when rendering and creating pixmaps
+fitz.TOOLS.set_aa_level(0)
 
 
 def get_good_rectangles(page: Page) -> List[Rect]:
@@ -34,11 +38,6 @@ def get_good_rectangles(page: Page) -> List[Rect]:
         if drawing["fill"] is None:
             # Unfilled box (transparent to the eye, but distinct from ones that
             # have opacity of 0).
-            continue
-
-        if is_white(drawing["fill"]):
-            # White box. These are used for various purposes like, with line
-            # number columns, borders, etc. Ignore them.
             continue
 
         # Each drawing can contain multiple "draw" commands that could be
@@ -231,7 +230,9 @@ def group_chars_by_rect(
 
 
 @typing.no_type_check  # It gets confused w/filters
-def filter_redactions(redactions: List[RedactionType]) -> List[RedactionType]:
+def filter_redactions_by_text(
+    redactions: List[RedactionType],
+) -> List[RedactionType]:
     """Filter out redactions that are not actually bad.
 
     :param redactions: A list of redactions that might be bad
@@ -253,6 +254,42 @@ def filter_redactions(redactions: List[RedactionType]) -> List[RedactionType]:
     return list(redactions)
 
 
+def filter_redactions_by_pixmap(
+    redactions: List[RedactionType],
+    page: Page,
+) -> List[RedactionType]:
+    """Convert each bad redaction to an image and check it for text
+
+    :param redactions: A list of redactions that might be bad
+    :param page: The PyMuPDF.Page object where the bad redactions might be
+    :return: The redactions, if they are valid
+    """
+    bad_redactions = []
+    for redaction in redactions:
+        pixmap = page.get_pixmap(
+            # Use gray for simplicity and speed, though this risks missing a
+            # bad redaction.
+            colorspace=fitz.csGRAY,
+            clip=fitz.Rect(redaction["bbox"]),
+        )
+        # Get a memoryview of the pixels. This is a 1-D array of grayscale
+        # values.
+        pixels = pixmap.samples_mv
+        if len(pixels) > 1000:
+            # Big redaction. Use random sampling to select fewer pixels
+            pixels = random.sample(pixels, 1000)
+        std_dev = statistics.stdev(pixels)
+        if std_dev > 0:
+            # There's some degree of variation in the grayscale values of the
+            # pixels. ∴ it's not a uniform box and it's not a bad redaction.
+            # filename = f'{redaction["text"].replace("/", "_")}.png'
+            # print(f"Got high variance of {std_dev}. Saving {filename}")
+            # pixmap.save(filename)
+            continue
+        bad_redactions.append(redaction)
+    return bad_redactions
+
+
 def get_bad_redactions(page: Page) -> List[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
@@ -263,5 +300,6 @@ def get_bad_redactions(page: Page) -> List[RedactionType]:
     good_rectangles = get_good_rectangles(page)
     intersecting_chars = get_intersecting_chars(page, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
-    bad_redactions = filter_redactions(redactions)
+    bad_redactions = filter_redactions_by_text(redactions)
+    bad_redactions = filter_redactions_by_pixmap(bad_redactions, page)
     return bad_redactions
