@@ -184,6 +184,9 @@ def group_chars_by_rect(
     intersected with and group the chars back into words along with the bboxes
     of the rectangles they intersected with.
 
+    If a char intersects with more than one rectangle, only include it as part
+    of the rectangle with the highest sequence number.
+
     :param chars: The list of character dicts that intersect with rectangles in
     the PDF.
     :param rectangles: A list of PyMuPDF.Rect objects from the page (aka the
@@ -191,15 +194,37 @@ def group_chars_by_rect(
     :return: A list of dictionaries with keys for the rectangle's BBOX and the
     words underneath it.
     """
+    # A problem that we must deal with is stacked rectangles. Imagine a stack
+    # of stuff like so:
+    #
+    #   On top: Some red characters, "ABC"
+    #   Then: A white rect
+    #   On bottom: A red rect
+    #
+    # In this case, you can see the letters because they have a white
+    # background. It's not a bad redaction, even though the letters intersect
+    # with each of the rectangles. These need to get coalesced into a single
+    # bad redaction.
+    #
+    # Reverse-sort the rectangles by sequence number, and eliminate each char
+    # as soon as it intersects a rectangle.
     redactions = []
-    for rect in rectangles:
+    # Sort the rectangles by reversed sequence key.
+    seq_sorted_rects = sorted(rectangles, key=lambda x: x.seqno, reverse=True)
+    for rect in seq_sorted_rects:
         redaction: RedactionType = {
             "bbox": (rect.x0, rect.y0, rect.x1, rect.y1),
             "text": "",
         }
-        for char in chars:
-            if char["rect"] & rect:
+        # Make a copy of the chars list so we can manipulate it in the loop
+        char_copy = chars.copy()
+        for char in char_copy:
+            if abs(char["rect"] & rect):
+                # The char intersects with this rectangle. Add it to the
+                # redaction dict, and remove it from the list so it doesn't
+                # get analyzed again.
                 redaction["text"] += char["c"]
+                chars.remove(char)
         redactions.append(redaction)
 
     return redactions
