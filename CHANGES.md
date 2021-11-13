@@ -1,6 +1,20 @@
 ## Current
 
 
+### v0.3.0, 2021-11-12
+
+Reduces false positives by inspecting the pixels of every possible bad
+redaction. This comes at a small performance cost, but will eliminate many of
+the false positives we've been dealing with. This approach was selected because
+understanding the ins and outs of PDFs and trying to *guess* the color of their
+x-y locations is impossible in Python.
+
+Adds support for bad redactions under rectangles that are not pure black.
+Previously, we ignored all non-black rectangles, which meant that redactions
+that weren't black wouldn't be caught. With our new pixel-inspection approach,
+we can include these without them causing issues.
+
+
 ### v0.2.4, 2021-10-28
 
 Upgrades to PyMuPDF 1.19.1, which simplifies our handling of colorspaces. We

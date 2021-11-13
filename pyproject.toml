@@ -25,7 +25,7 @@ packages = [
 ]
 readme = "README.md"
 repository = "https://github.com/freelawproject/pdf-redaction-detector"
-version = "0.2.4"
+version = "0.3.0"
 
 [tool.poetry.urls]
 "Organisation Homepage" = "https://free.law/"
