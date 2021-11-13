@@ -67,7 +67,7 @@ def get_good_rectangles(page: Page) -> List[Rect]:
         for rectangle in rectangles:
             # Give it the sequence number and color of its parent drawing
             rectangle.seqno = drawing["seqno"]
-            rectangle.color = drawing["fill"]
+            rectangle.fill = drawing["fill"]
             if rectangle.y1 <= 43:
                 # It's a header, ignore it
                 continue
@@ -94,7 +94,7 @@ def intersects(
     """Determine if a rectangle intersects is occluded by a list of others
 
     This uses Rect objects, but note that they must have extra attributes of
-    "color" and "seqno".
+    "fill" and "seqno".
 
     :param text_rect: The rectangle around the text to check for intersections.
     :param rectangles: A list of rectangles to check for intersections.
@@ -108,19 +108,19 @@ def intersects(
     """
     for rect in rectangles + [text_rect]:
         assert all(
-            [hasattr(rect, "seqno"), hasattr(rect, "color")]
-        ), "Rectangle lacks required 'seqno' or 'color' attribute."
+            [hasattr(rect, "seqno"), hasattr(rect, "fill")]
+        ), "Rectangle lacks required 'seqno' or 'fill' attribute."
 
     overlapping_areas = []
     for rect in rectangles:
         intersecting_area = abs(text_rect & rect)
         if intersecting_area > 0 and rect.seqno > text_rect.seqno:
-            # Intersecting and text was drawn first,
-            # meaning it's behind the drawing.
+            # Intersecting text was drawn first, meaning it's behind the rect.
             overlapping_areas.append(intersecting_area)
             continue
-        if intersecting_area > 0 and rect.color == text_rect.color:
-            # Intersecting and same color. This makes text invisible.
+        if intersecting_area > 0 and rect.fill == text_rect.fill:
+            # Intersecting and same color. This makes text invisible even if
+            # it's drawn on top of the rect.
             overlapping_areas.append(intersecting_area)
             continue
 
@@ -159,13 +159,13 @@ def get_intersecting_chars(
         span_color = span["color"]
         span_rect = fitz.Rect(span["bbox"])
         span_rect.seqno = span_seq_no
-        span_rect.color = span_color
+        span_rect.fill = span_color
         if not intersects(span_rect, rectangles):
             continue
         for char in span["chars"]:
             char_rect = fitz.Rect(char[3])
             char_rect.seqno = span_seq_no
-            char_rect.color = span_color
+            char_rect.fill = span_color
             if intersects(char_rect, rectangles, occlusion_threshold=0.8):
                 char_dict: CharDictType = {
                     "rect": char_rect,
@@ -218,7 +218,8 @@ def filter_redactions(redactions: List[RedactionType]) -> List[RedactionType]:
     # Has non-whitespace content and isn't blank
     redactions = filter(lambda r: r["text"].strip(), redactions)
 
-    # Has some letters or numbers
+    # Has some letters or numbers (isn't just a rectangle
+    # with nothing under it)
     redactions = filter(lambda r: re.search(r"[\d\w]", r["text"]), redactions)
 
     # Has OK words in redaction

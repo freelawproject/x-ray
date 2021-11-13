@@ -41,12 +41,12 @@ class RectTest(TestCase):
 
 
 def rectangle_factory(
-    bbox: Tuple[float, ...], seqno: int, color: float
+    bbox: Tuple[float, ...], seqno: int, fill: float
 ) -> Rect:
     """Factory for making little rectangles with extra attributes"""
     r = Rect(*bbox)
     r.seqno = seqno
-    r.color = color
+    r.fill = fill
     return r
 
 
@@ -56,7 +56,7 @@ class IntersectionTest(TestCase):
     rect = rectangle_factory(
         (1, 1, 2, 2),
         seqno=0,  # All other rectangles are on top!
-        color=1,
+        fill=1,
     )
 
     def test_in_one_of_many(self):
