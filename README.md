@@ -41,7 +41,7 @@ pip install x-ray
 You can easily use this on the command line. Once installed, just:
 
 ```bash
-% python -m xray path/to/your/file.pdf
+% xray path/to/your/file.pdf
 {
   "1": [
     {
@@ -61,7 +61,7 @@ Or if you have hte file on a server somewhere, give it a URL. If it starts
 with `https://`, it will be interpreted as a PDF to download:
 
 ```bash
-% python -m xray https://free.law/pdf/congressional-testimony-michael-lissner-free-law-project-hearing-on-ethics-and-transparency-2021-10-26.pdf
+% xray https://free.law/pdf/congressional-testimony-michael-lissner-free-law-project-hearing-on-ethics-and-transparency-2021-10-26.pdf
 {}
 ```
 
@@ -76,7 +76,15 @@ That'll give you json, so you can use it with tools like [`jq`][jq]. The format 
 
 Simple enough.
 
-If you want a bit more, you can use `x-ray` in Python:
+You can also use it as a Python module, if you prefer the long-form:
+
+```
+% pathon -m xray some-file.pdf
+```
+
+But that's not as easy to remember.
+
+If you want a bit more, you can use `xray` in Python:
 
 ```python
 from pprint import pprint

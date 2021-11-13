@@ -40,3 +40,11 @@ def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
     pdf.close()
 
     return bad_redactions
+
+
+def cli(args=None):
+    """Process command line arguments."""
+    if not args:
+        args = sys.argv[1:]
+    file = args[0]
+    print(inspect(file))
