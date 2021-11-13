@@ -32,7 +32,7 @@ version = "0.2.4"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-PyMuPDF = "^1.19.0"
+PyMuPDF = "1.19.1"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"
