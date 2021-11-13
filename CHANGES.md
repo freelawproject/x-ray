@@ -1,4 +1,13 @@
-## Current
+## Change Log
+
+
+### v0.3.1, 2021-11-12
+
+Adds support for URLs. This now does what you'd expect:
+
+```
+% python -m xray https://example.com/some-path.pdf
+```
 
 
 ### v0.3.0, 2021-11-12
@@ -26,8 +35,6 @@ Previously we'd have a false positive if a rectangle and text were the same
 color but in different colorspaces. For example, 0.0 in grayscale is the same
 as (0.0, 0.0, 0.0) in RGB, but we couldn't compare those easily before.
 
-
-## Past
 
 ### v0.2.3, 2021-10-28
 
