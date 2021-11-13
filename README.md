@@ -185,6 +185,6 @@ This repository is available under the permissive BSD license, making it easy an
 Pull and feature requests welcome. Online editing in GitHub is possible (and easy!).
 
 [jq]: https://stedolan.github.io/jq/
-[mu]: pymupdf.readthedocs.io/
+[mu]: https://pymupdf.readthedocs.io/
 [asc]: https://en.wikipedia.org/wiki/Ascender_(typography)
 [creds]: https://python-poetry.org/docs/repositories/#configuring-credentials
