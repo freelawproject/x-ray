@@ -65,7 +65,13 @@ with `https://`, it will be interpreted as a PDF to download:
 {}
 ```
 
-That'll give you json, so you can use it with tools like [`jq`][jq]. The format is as follows:
+A fun trick you can now do is to make a file with one URL per line, call it `urls.txt`. Then you can run this to check each URL:
+
+```bash
+xargs -n 1 xray  < urls.txt
+```
+
+However you run `xray` on the command line, you'll get JSON as output. When you have that, you can use it with tools like [`jq`][jq]. The format is as follows:
 
  - It's a dict.
  - The keys are page numbers.
@@ -84,7 +90,7 @@ You can also use it as a Python module, if you prefer the long-form:
 
 But that's not as easy to remember.
 
-If you want a bit more, you can use `xray` in Python:
+If you want a bit more, you can, of course, use `xray` in Python:
 
 ```python
 from pprint import pprint
