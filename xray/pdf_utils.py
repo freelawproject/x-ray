@@ -11,7 +11,7 @@ import fitz
 from fitz import Page, Rect
 
 from .custom_types import CharDictType, RedactionType
-from .text_utils import is_ok_words, is_repeated_chars
+from .text_utils import is_ok_words, is_repeated_chars, looks_like_a_date
 
 # Disable anti-aliasing when rendering and creating pixmaps
 fitz.TOOLS.set_aa_level(0)
@@ -249,9 +249,13 @@ def filter_redactions_by_text(
     redactions = filter(lambda r: re.search(r"[\d\w]", r["text"]), redactions)
 
     # Has OK words in redaction
-    redactions = filter(lambda r: is_ok_words(r["text"]), redactions)
+    redactions = list(filter(lambda r: is_ok_words(r["text"]), redactions))
 
-    return list(redactions)
+    # Every redaction is just a date
+    if all(looks_like_a_date(redaction["text"]) for redaction in redactions):
+        redactions = []
+
+    return redactions
 
 
 def filter_redactions_by_pixmap(

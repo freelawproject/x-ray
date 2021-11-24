@@ -17,8 +17,36 @@ from xray.pdf_utils import (
     get_intersecting_chars,
     intersects,
 )
+from xray.text_utils import looks_like_a_date
 
 root_path = Path(__file__).resolve().parent / "assets"
+
+
+class TextTest(TestCase):
+    """Do our text tools work properly?"""
+
+    def test_valid_date_only_checks(self):
+        actual_dates = (
+            "12/13/21",
+            "12/14/2111",
+            "1/1/22",
+            "1/1/2022",
+            "01-02/2222",  # Fine, whatever
+        )
+        for d in actual_dates:
+            with self.subTest(d):
+                self.assertTrue(looks_like_a_date(d))
+
+    def test_invalid_date_only_checks(self):
+        not_dates = (
+            "111/11/11",
+            "asdf-",
+            "asdf 1/1/2022",
+        )
+
+        for d in not_dates:
+            with self.subTest(d):
+                self.assertFalse(looks_like_a_date(d))
 
 
 class RectTest(TestCase):
@@ -212,11 +240,19 @@ class IntegrationTest(TestCase):
         with fitz.open(self.path) as pdf:
             page = pdf[0]
             bad_redactions = get_bad_redactions(page)
-        self.assertEqual(len(bad_redactions), 3)
+        expected_bad_redaction_count = 3
+        actual_bad_redaction_count = len(bad_redactions)
+        self.assertEqual(
+            actual_bad_redaction_count,
+            expected_bad_redaction_count,
+            msg=f"Got {actual_bad_redaction_count} bad redactions, but "
+            f"expected {expected_bad_redaction_count}. Redaction data is: "
+            f"{bad_redactions}",
+        )
 
-    def test_finding_bad_redactions_in_a_file(self):
+    def test_inspect_method_on_a_filepath(self):
         redactions = xray.inspect(self.path)
-        self.assertTrue(len(redactions[1]) == 3)
+        self.assertEqual(len(redactions[1]), 3)
 
     def test_tricky_rectangles(self):
         """Check that tricky PDFs don't create false positives.

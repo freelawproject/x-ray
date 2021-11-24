@@ -36,3 +36,13 @@ def is_ok_words(text: str) -> bool:
         flags=re.IGNORECASE | re.MULTILINE,
     )
     return len(text) > 0
+
+
+def looks_like_a_date(text: str) -> bool:
+    """Is the redaction, in its entirety, a date?
+
+    :param text: The text found under the redaction
+    :returns True if it's a date, else False
+    """
+    text = re.sub(r"[0-3]?\d[/\-][0-3]?\d[/\-]\d{2,4}", "", text)
+    return len(text) == 0
