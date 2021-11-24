@@ -1,5 +1,8 @@
 """Tools for working with text strings"""
 import re
+from typing import List
+
+from xray.custom_types import PdfRedactionsDict, RedactionType
 
 
 def is_repeated_chars(text: str) -> bool:
@@ -36,6 +39,23 @@ def is_ok_words(text: str) -> bool:
         flags=re.IGNORECASE | re.MULTILINE,
     )
     return len(text) > 0
+
+
+def check_if_all_dates(redactions: PdfRedactionsDict) -> PdfRedactionsDict:
+    """Check if every redaction in a doc is a date
+
+    :param redactions: The PDF redaction dict for an entire document
+    :returns: The redaction list that was passed in, or an empty list if they
+    are all dates.
+    """
+    redaction_list: List[RedactionType]
+    for redaction_list in redactions.values():
+        for redaction in redaction_list:
+            if not looks_like_a_date(redaction["text"]):
+                return redactions
+
+    # Everything looked like a date, therefore no bad redactions.
+    return {}
 
 
 def looks_like_a_date(text: str) -> bool:

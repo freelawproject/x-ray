@@ -10,6 +10,7 @@ from fitz import Document
 
 from .custom_types import PdfRedactionsDict
 from .pdf_utils import get_bad_redactions
+from .text_utils import check_if_all_dates
 
 
 def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
@@ -38,6 +39,7 @@ def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
         if redactions:
             bad_redactions[page_number] = redactions
     pdf.close()
+    bad_redactions = check_if_all_dates(bad_redactions)
 
     return bad_redactions
 
