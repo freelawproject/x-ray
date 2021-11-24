@@ -1,9 +1,7 @@
 """
 Utilities for working with PDFs and redactions
 """
-import random
 import re
-import statistics
 import typing
 from typing import List
 
@@ -273,21 +271,13 @@ def filter_redactions_by_pixmap(
         pixmap = page.get_pixmap(
             # Use gray for simplicity and speed, though this risks missing a
             # bad redaction.
-            colorspace=fitz.csGRAY,
+            colorspace=fitz.csRGB,
             clip=fitz.Rect(redaction["bbox"]),
         )
-        # Get a memoryview of the pixels. This is a 1-D array of grayscale
-        # values.
-        pixels = pixmap.samples_mv
-        if len(pixels) > 1000:
-            # Big redaction. Use random sampling to select fewer pixels
-            pixels = random.sample(pixels, 1000)
-        std_dev = statistics.stdev(pixels)
-        if std_dev > 0:
-            # There's some degree of variation in the grayscale values of the
-            # pixels. ∴ it's not a uniform box and it's not a bad redaction.
+        if not pixmap.is_unicolor:
+            # There's some degree of variation in the colors of the pixels.
+            # ∴ it's not a uniform box and it's not a bad redaction.
             # filename = f'{redaction["text"].replace("/", "_")}.png'
-            # print(f"Got high variance of {std_dev}. Saving {filename}")
             # pixmap.save(filename)
             continue
         bad_redactions.append(redaction)
