@@ -57,7 +57,7 @@ You can easily use this on the command line. Once installed, just:
 }
 ```
 
-Or if you have hte file on a server somewhere, give it a URL. If it starts
+Or if you have the file on a server somewhere, give it a URL. If it starts
 with `https://`, it will be interpreted as a PDF to download:
 
 ```bash
@@ -65,7 +65,7 @@ with `https://`, it will be interpreted as a PDF to download:
 {}
 ```
 
-A fun trick you can now do is to make a file with one URL per line, call it `urls.txt`. Then you can run this to check each URL:
+A fun trick you can do is to make a file with one URL per line, call it `urls.txt`. Then you can run this to check each URL:
 
 ```bash
 xargs -n 1 xray  < urls.txt
@@ -144,11 +144,16 @@ You can read the source to see how it works, but the general idea is to:
 
 2. Find letters in the same location
 
-3. Render the rectangle
+3. Render the rectangle as an image
 
-4. Inspect the rectangle to see if it's all one color
+4. Inspect the rectangle to see if it's all one color. If it is, then that's a
+   bad redaction. If not, then we assume you can see a mix of text and
+   drawings, indicating a redaction that's OK.
 
-The PDF format is a big and complicated one, so it's difficult to do all this l and perfectly. We do our best, but there's always more to do to make it better. Donations and sponsored work help.
+The PDF format is a big and complicated one, so it's difficult to do all this perfectly. We do our best, but there's always more to do to make it better. [Donations][d] and sponsored work help.
+
+[d]: https://free.law/donate/
+
 
 ## Contributions
 
