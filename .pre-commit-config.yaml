@@ -13,6 +13,8 @@ repos:
      - id: check-toml
      - id: check-xml
      - id: check-yaml
+     - id: debug-statements
+     - id: detect-private-key
      - id: end-of-file-fixer
      - id: check-byte-order-marker
      - id: fix-encoding-pragma
