@@ -85,7 +85,7 @@ Simple enough.
 You can also use it as a Python module, if you prefer the long-form:
 
 ```
-% pathon -m xray some-file.pdf
+% python -m xray some-file.pdf
 ```
 
 But that's not as easy to remember.

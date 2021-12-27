@@ -35,18 +35,18 @@ xray = "xray.__init__:cli"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-PyMuPDF = "1.19.2"
+PyMuPDF = "1.19.3"
 requests = "^2.26.0"
 types-requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
-black = "^21.11b1"
+black = "^21.12b0"
 isort = "^5.10.0"
 mypy = "^0.910"
 pylint = "^2.7.1"
 wheel = "^0.35.1"
 flynt = "^0.69"
-pre-commit = "^2.15.0"
+pre-commit = "^2.16.0"
 ipython = "^7.29.0"
 
 [tool.black]
