@@ -149,7 +149,7 @@ testing = ["covdefaults (>=1.2.0)", "coverage (>=4)", "pytest (>=4)", "pytest-co
 
 [[package]]
 name = "flynt"
-version = "0.69"
+version = "0.70"
 description = "CLI tool to convert a python project's %-formatted strings to f-strings."
 category = "dev"
 optional = false
@@ -545,7 +545,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "475869442d09953d82c45cdad05d6ca7b8f441c6cf775b4f685ea392fb9c1206"
+content-hash = "78493f5a492f0c832a9a7670a7acf5b0362294d9975bd69dc7b820d07029e550"
 
 [metadata.files]
 appnope = [
@@ -605,8 +605,8 @@ filelock = [
     {file = "filelock-3.3.2.tar.gz", hash = "sha256:7afc856f74fa7006a289fd10fa840e1eebd8bbff6bffb69c26c54a0512ea8cf8"},
 ]
 flynt = [
-    {file = "flynt-0.69-py3-none-any.whl", hash = "sha256:5bc49abd71891afbc2400f22f040ba9f23259fe03f9049dd62a2de8953248ce7"},
-    {file = "flynt-0.69.tar.gz", hash = "sha256:42de12dd29e66cc067cda8a2c1fb34fb79c0b14b0c48cd7cdcbc7c5a84578adf"},
+    {file = "flynt-0.70-py3-none-any.whl", hash = "sha256:5cf4b103813d709b15a1c419061188c8cf1c7cd45bc0d2d960e05f93e72246e6"},
+    {file = "flynt-0.70.tar.gz", hash = "sha256:2acc646923c54b54c2260c821cdd548d142646d248797454a214e22e2ae40321"},
 ]
 identify = [
     {file = "identify-2.3.5-py2.py3-none-any.whl", hash = "sha256:ba945bddb4322394afcf3f703fa68eda08a6acc0f99d9573eb2be940aa7b9bba"},

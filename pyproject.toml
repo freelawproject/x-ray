@@ -45,7 +45,7 @@ isort = "^5.10.0"
 mypy = "^0.910"
 pylint = "^2.7.1"
 wheel = "^0.35.1"
-flynt = "^0.69"
+flynt = "^0.70"
 pre-commit = "^2.16.0"
 ipython = "^7.29.0"
 
