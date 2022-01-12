@@ -480,7 +480,7 @@ test = ["pytest"]
 
 [[package]]
 name = "types-requests"
-version = "2.27.5"
+version = "2.27.6"
 description = "Typing stubs for requests"
 category = "main"
 optional = false
@@ -821,8 +821,8 @@ traitlets = [
     {file = "traitlets-5.1.1.tar.gz", hash = "sha256:059f456c5a7c1c82b98c2e8c799f39c9b8128f6d0d46941ee118daace9eb70c7"},
 ]
 types-requests = [
-    {file = "types-requests-2.27.5.tar.gz", hash = "sha256:a67dc1a8512312b8cb89f3ba95f9a0e69ef3436ae77c9bd4f328cd88f17adda2"},
-    {file = "types_requests-2.27.5-py3-none-any.whl", hash = "sha256:9c9390b18b222956155af6678570f452edafa3bb94bd5a4efe67da1105aa128c"},
+    {file = "types-requests-2.27.6.tar.gz", hash = "sha256:5e0dc681e9bfadb5c1d17f63d29f6d13d29ef2897d30cb9c79285b34a1655fd7"},
+    {file = "types_requests-2.27.6-py3-none-any.whl", hash = "sha256:8f8a3cf66c525247750b0a0e6ffef4a210d7c8637065a1e7a3cb5769b1eb82a4"},
 ]
 types-urllib3 = [
     {file = "types-urllib3-1.26.3.tar.gz", hash = "sha256:e0c57152d7efc408a877adfc9073316dcd3e3ffb39962e90544f7597696c0d7c"},
