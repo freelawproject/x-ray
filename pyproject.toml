@@ -35,7 +35,7 @@ xray = "xray.__init__:cli"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-PyMuPDF = "1.20.1"
+PyMuPDF = "1.20.2"
 requests = "^2.26.0"
 types-requests = "^2.26.0"
 
