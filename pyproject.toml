@@ -47,7 +47,7 @@ pylint = "^2.7.1"
 wheel = "^0.38.2"
 flynt = "^0.69"
 pre-commit = "^2.20.0"
-ipython = "^8.5.0"
+ipython = "^8.6.0"
 
 [tool.black]
 include = '''.*\.pyi?$'''
