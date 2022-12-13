@@ -41,7 +41,7 @@ types-requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.12"
-isort = "^5.10.0"
+isort = "^5.11.1"
 mypy = "^0.910"
 pylint = "^2.7.1"
 wheel = "^0.38.2"
