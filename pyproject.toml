@@ -46,7 +46,7 @@ mypy = "^0.910"
 pylint = "^2.7.1"
 wheel = "^0.38.2"
 flynt = "^0.69"
-pre-commit = "^2.21.0"
+pre-commit = "^3.0.0"
 ipython = "^8.8.0"
 
 [tool.black]
