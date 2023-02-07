@@ -3,11 +3,17 @@ updates:
 - package-ecosystem: pip
   directory: "/"
   schedule:
-    interval: daily
-    time: "13:00"
+    interval: monthly
   open-pull-requests-limit: 10
   ignore:
+  # Ignore all tooling (it can get old, it's mature enough)
+  - dependency-name: selenium
+  - dependency-name: black
   - dependency-name: pylint
-    versions:
-    - 2.7.2
-    - 2.7.4
+  - dependency-name: flake8
+  - dependency-name: isort
+  - dependency-name: mypy
+  - dependency-name: flynt
+  # Ignore all patch updates.
+  - dependency-name: '*'
+    update-types: ["version-update:semver-patch"]
