@@ -24,14 +24,19 @@ packages = [
     {include = "xray"}
 ]
 readme = "README.md"
-repository = "https://github.com/freelawproject/pdf-redaction-detector"
-version = "0.3.3"
+homepage = "https://free.law/projects/x-ray"
+repository = "https://github.com/freelawproject/x-ray"
+documentation = "https://github.com/freelawproject/x-ray/blob/main/README.md"
+version = "0.3.4"
 
 [tool.poetry.scripts]
 xray = "xray.__init__:cli"
 
 [tool.poetry.urls]
 "Organisation Homepage" = "https://free.law/"
+"Change Log" = "https://github.com/freelawproject/x-ray/blob/main/CHANGES.md"
+Issues = "https://github.com/freelawproject/x-ray/issues"
+Funding = "https://www.courtlistener.com/donate/?referrer=pypi-xray"
 
 [tool.poetry.dependencies]
 python = "^3.8"

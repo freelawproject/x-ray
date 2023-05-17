@@ -1,5 +1,9 @@
 ## Change Log
 
+### v0.3.4, 2023-05-17
+
+ - Upgrade dependencies.
+
 ### v0.3.3, 2021-11-24
 
  - Upgrade to PyMuPDF 1.19.2, and use its new `is_unicolor` attribute to

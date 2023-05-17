@@ -164,6 +164,8 @@ Please see the issues list on Github for things we need, or start a conversation
 
 Releases happen automatically via Github Actions. To trigger an automated build:
 
+0. Update CHANGES.md
+
 1. Update the version in pyproject.toml
 
 2. Tag the commit with something like "v0.0.0".
