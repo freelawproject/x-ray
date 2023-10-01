@@ -40,7 +40,7 @@ Funding = "https://www.courtlistener.com/donate/?referrer=pypi-xray"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-PyMuPDF = "1.22.2"
+PyMuPDF = "1.23.4"
 requests = "^2.26.0"
 types-requests = "^2.26.0"
 
