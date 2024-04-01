@@ -11,6 +11,7 @@ in the input. Text is shown surrounded by its text block rectangle. Images are
 not displayed, but their locations are indicated by empty rectangles with
 some meta information.
 """
+
 import sys
 import time
 

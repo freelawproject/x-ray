@@ -1,4 +1,5 @@
 """Tools for working with text strings"""
+
 import re
 from typing import List
 
