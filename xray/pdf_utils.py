@@ -1,6 +1,7 @@
 """
 Utilities for working with PDFs and redactions
 """
+
 import re
 import typing
 from typing import List
