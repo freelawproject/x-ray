@@ -1,7 +1,6 @@
 """Tools for working with text strings"""
 
 import re
-from typing import List
 
 from xray.custom_types import PdfRedactionsDict, RedactionType
 
@@ -49,7 +48,7 @@ def check_if_all_dates(redactions: PdfRedactionsDict) -> PdfRedactionsDict:
     :returns: The redaction list that was passed in, or an empty list if they
     are all dates.
     """
-    redaction_list: List[RedactionType]
+    redaction_list: list[RedactionType]
     for redaction_list in redactions.values():
         for redaction in redaction_list:
             if not looks_like_a_date(redaction["text"]):
