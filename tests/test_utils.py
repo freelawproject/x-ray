@@ -5,7 +5,6 @@ X-Ray Tests
 import os
 import unittest
 from pathlib import Path
-from typing import Tuple
 from unittest import TestCase
 
 import fitz
@@ -71,7 +70,7 @@ class RectTest(TestCase):
 
 
 def rectangle_factory(
-    bbox: Tuple[float, ...], seqno: int, fill: float
+    bbox: tuple[float, ...], seqno: int, fill: float
 ) -> Rect:
     """Factory for making little rectangles with extra attributes"""
     r = Rect(*bbox)

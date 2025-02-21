@@ -1,8 +1,20 @@
-## Change Log
+# Version History
 
-### v0.3.4, 2023-05-17
+## Future Versions
 
+ - N/A
+
+## Upcoming Changes
+
+ - Dropped support for Python 3.7 and 3.8
  - Upgrade dependencies.
+
+
+## Current Version
+
+ - 0.3.4 (2023-05-17): Upgrade dependencies.
+
+## Past Versions
 
 ### v0.3.3, 2021-11-24
 

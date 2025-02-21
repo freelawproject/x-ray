@@ -4,7 +4,6 @@ Utilities for working with PDFs and redactions
 
 import re
 import typing
-from typing import List
 
 import fitz
 from fitz import Page, Rect
@@ -16,7 +15,7 @@ from .text_utils import is_ok_words, is_repeated_chars
 fitz.TOOLS.set_aa_level(0)
 
 
-def get_good_rectangles(page: Page) -> List[Rect]:
+def get_good_rectangles(page: Page) -> list[Rect]:
     """Find rectangles in the PDFs that might be redactions.
 
     :param page: The PyMuPDF Page to look for rectangles within.
@@ -86,7 +85,7 @@ def get_good_rectangles(page: Page) -> List[Rect]:
 
 def intersects(
     text_rect: Rect,
-    rectangles: List[Rect],
+    rectangles: list[Rect],
     occlusion_threshold: float = 0.0,
 ) -> bool:
     """Determine if a rectangle intersects is occluded by a list of others
@@ -135,8 +134,8 @@ def intersects(
 
 
 def get_intersecting_chars(
-    page: Page, rectangles: List[Rect]
-) -> List[CharDictType]:
+    page: Page, rectangles: list[Rect]
+) -> list[CharDictType]:
     """Get the chars that are occluded by the rectangles
 
     We do this in two stages. First, we check for intersecting spans, then we
@@ -175,9 +174,9 @@ def get_intersecting_chars(
 
 
 def group_chars_by_rect(
-    chars: List[CharDictType],
-    rectangles: List[Rect],
-) -> List[RedactionType]:
+    chars: list[CharDictType],
+    rectangles: list[Rect],
+) -> list[RedactionType]:
     """Take the chars that intersected with rectangles, and the rectangles they
     intersected with and group the chars back into words along with the bboxes
     of the rectangles they intersected with.
@@ -230,8 +229,8 @@ def group_chars_by_rect(
 
 @typing.no_type_check  # It gets confused w/filters
 def filter_redactions_by_text(
-    redactions: List[RedactionType],
-) -> List[RedactionType]:
+    redactions: list[RedactionType],
+) -> list[RedactionType]:
     """Filter out redactions that are not actually bad.
 
     :param redactions: A list of redactions that might be bad
@@ -254,9 +253,9 @@ def filter_redactions_by_text(
 
 
 def filter_redactions_by_pixmap(
-    redactions: List[RedactionType],
+    redactions: list[RedactionType],
     page: Page,
-) -> List[RedactionType]:
+) -> list[RedactionType]:
     """Convert each bad redaction to an image and check it for text
 
     :param redactions: A list of redactions that might be bad
@@ -281,7 +280,7 @@ def filter_redactions_by_pixmap(
     return bad_redactions
 
 
-def get_bad_redactions(page: Page) -> List[RedactionType]:
+def get_bad_redactions(page: Page) -> list[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
     :param: page: The PyMuPDF.Page from a PDF
