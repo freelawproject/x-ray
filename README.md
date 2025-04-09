@@ -154,6 +154,11 @@ The PDF format is a big and complicated one, so it's difficult to do all this pe
 
 [d]: https://free.law/donate/
 
+## Testing
+
+To run all tests use the following command. Be aware there is one failing test that is marked as failing. 
+
+ `python3 -m unittest tests/test_utils.py`
 
 ## Contributions
 

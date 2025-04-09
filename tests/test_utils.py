@@ -230,6 +230,15 @@ class InspectApiTest(TestCase):
         redactions = xray.inspect(data)
         self.assertTrue(redactions)
 
+    def test_inspect_works_with_crosshatch(self):
+        """Test gray scaled redactions"""
+        path = root_path / "bad_cross_hatched_redactions.pdf"
+        with open(path, "rb") as f:
+            data = f.read()
+
+        redactions = xray.inspect(data)
+        self.assertTrue(redactions)
+
 
 class IntegrationTest(TestCase):
     """Do our highest-level APIs work?"""

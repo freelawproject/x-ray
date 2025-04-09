@@ -8,6 +8,7 @@
 
  - Dropped support for Python 3.7 and 3.8
  - Upgrade dependencies.
+ - Fix for bug that may cause crosshatched redactions to fail
 
 
 ## Current Version
