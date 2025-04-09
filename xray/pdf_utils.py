@@ -270,7 +270,7 @@ def filter_redactions_by_pixmap(
             colorspace=fitz.csRGB,
             clip=fitz.Rect(redaction["bbox"]),
         )
-        if not pixmap.is_unicolor:
+        if multi_colored(pixmap, threshold=128):
             # There's some degree of variation in the colors of the pixels.
             # ∴ it's not a uniform box and it's not a bad redaction.
             # filename = f'{redaction["text"].replace("/", "_")}.png'
@@ -293,3 +293,25 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     bad_redactions = filter_redactions_by_text(redactions)
     bad_redactions = filter_redactions_by_pixmap(bad_redactions, page)
     return bad_redactions
+
+
+def multi_colored(pixmap, threshold=128) -> bool:
+    """Check if a pixmap contains black and white pixels.
+
+    :param pixmap: The pixmap to check
+    :param threshold: The threshold to use for black and white pixels
+    :return true if black and white else false
+    """
+    data = pixmap.samples
+    channels = pixmap.n
+
+    # Get the first pixel's brightness to establish what we're looking for
+    first_brightness = (data[0] + data[1] + data[2]) // 3
+    first_is_dark = first_brightness < threshold
+
+    for i in range(channels, len(data), channels):
+        brightness = (data[i] + data[i + 1] + data[i + 2]) // 3
+        is_dark = brightness < threshold
+        if is_dark != first_is_dark:
+            return True
+    return False
