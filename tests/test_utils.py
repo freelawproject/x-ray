@@ -375,3 +375,13 @@ class IntegrationTest(TestCase):
             {},
             msg="Got redactions on a multiline redaction, but shouldn't have.",
         )
+
+    def test_crosshatch_bad_redaction(self):
+        """Test gray scaled [X][X][X] redactions"""
+        path = root_path / "bad_cross_hatched_redactions.pdf"
+        bad_redactions = xray.inspect(path)
+        self.assertNotEqual(
+            bad_redactions,
+            {},
+            msg="Missing cross hatch bad redactions.",
+        )
