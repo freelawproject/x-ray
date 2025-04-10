@@ -230,15 +230,6 @@ class InspectApiTest(TestCase):
         redactions = xray.inspect(data)
         self.assertTrue(redactions)
 
-    def test_inspect_works_with_crosshatch(self):
-        """Test gray scaled redactions"""
-        path = root_path / "bad_cross_hatched_redactions.pdf"
-        with open(path, "rb") as f:
-            data = f.read()
-
-        redactions = xray.inspect(data)
-        self.assertTrue(redactions)
-
 
 class IntegrationTest(TestCase):
     """Do our highest-level APIs work?"""
@@ -383,4 +374,14 @@ class IntegrationTest(TestCase):
             redactions,
             {},
             msg="Got redactions on a multiline redaction, but shouldn't have.",
+        )
+
+    def test_crosshatch_bad_redaction(self):
+        """Test gray scaled [X][X][X] redactions"""
+        path = root_path / "bad_cross_hatched_redactions.pdf"
+        bad_redactions = xray.inspect(path)
+        self.assertNotEqual(
+            bad_redactions,
+            {},
+            msg="Missing cross hatch bad redactions.",
         )
