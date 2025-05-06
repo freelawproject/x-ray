@@ -45,32 +45,43 @@ requests = "^2.26.0"
 types-requests = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
-black = "^23.1"
-isort = "^5.12.0"
 mypy = "^0.910"
-pylint = "^2.7.1"
 wheel = "^0.38.2"
-flynt = "^0.69"
 pre-commit = "^3.3.3"
 ipython = "^8.12.0"
 
-[tool.black]
-include = '''.*\.pyi?$'''
+[tool.ruff]
 line-length = 79
-
-[tool.isort]
-force_grid_wrap = 0
-include_trailing_comma = true
-known_third_party = []
-line_length = 79
-multi_line_output = 3
-use_parentheses = true
-
-[tool.pylint.messages_control]
-disable = "C0330, C0326"
-
-[tool.pylint.format]
-max-line-length = "79"
+lint.select = [
+  # flake8-bugbear
+  "B",
+  # flake8-comprehensions
+  "C4",
+  # pycodestyle
+  "E",
+  # Pyflakes errors
+  "F",
+  # isort
+  "I",
+  # flake8-simplify
+  "SIM",
+  # flake8-tidy-imports
+  "TID",
+  # pyupgrade
+  "UP",
+  # Pyflakes warnings
+  "W",
+]
+lint.ignore = [
+  # flake8-bugbear opinionated rules
+  "B9",
+  # line-too-long
+  "E501",
+  # suppressible-exception
+  "SIM105",
+  # if-else-block-instead-of-if-exp
+  "SIM108",
+]
 
 [build-system]
 build-backend = "poetry.core.masonry.api"

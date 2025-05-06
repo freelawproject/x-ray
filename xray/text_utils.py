@@ -17,11 +17,8 @@ def is_repeated_chars(text: str) -> bool:
     if len(text) <= 1:
         return False
 
-    if len(set(text)) == 1:
-        # There's only one unique character in the string
-        return True
-
-    return False
+    # Return True if there's only one unique character in the string
+    return len(set(text)) == 1
 
 
 def is_ok_words(text: str) -> bool:

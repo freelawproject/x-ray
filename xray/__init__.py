@@ -24,9 +24,9 @@ def inspect(file: Union[str, bytes, Path]) -> PdfRedactionsDict:
     :return: A dict with the bad redaction information. If no bad redactions
     are found, returns an empty dict.
     """
-    if type(file) == bytes:
+    if isinstance(file, bytes):
         pdf = Document(stream=file, filetype="pdf")
-    elif type(file) == str and file.startswith("https://"):
+    elif isinstance(file, str) and file.startswith("https://"):
         r = requests.get(file, timeout=10)
         r.raise_for_status()
         pdf = Document(stream=r.content, filetype="pdf")

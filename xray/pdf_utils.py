@@ -104,9 +104,9 @@ def intersects(
     else False.
     """
     for rect in rectangles + [text_rect]:
-        assert all(
-            [hasattr(rect, "seqno"), hasattr(rect, "fill")]
-        ), "Rectangle lacks required 'seqno' or 'fill' attribute."
+        assert all([hasattr(rect, "seqno"), hasattr(rect, "fill")]), (
+            "Rectangle lacks required 'seqno' or 'fill' attribute."
+        )
 
     overlapping_areas = []
     for rect in rectangles:
@@ -128,9 +128,7 @@ def intersects(
     area_of_bbox = abs(text_rect.get_area())
 
     percent_occluded = greatest_occluded / area_of_bbox
-    if percent_occluded > occlusion_threshold:
-        return True
-    return False
+    return percent_occluded > occlusion_threshold
 
 
 def get_intersecting_chars(
