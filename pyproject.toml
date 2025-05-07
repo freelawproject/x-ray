@@ -47,7 +47,7 @@ types-requests = "^2.26.0"
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"
 wheel = "^0.38.2"
-pre-commit = "^3.3.3"
+pre-commit = "^4.2.0"
 ipython = "^8.12.0"
 
 [tool.ruff]
