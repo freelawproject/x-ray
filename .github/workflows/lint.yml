@@ -15,6 +15,8 @@ jobs:
         with:
           python-version: "3.9"
 
+      - uses: pre-commit/action@v3.0.0
+
       - name: Install Poetry
         uses: snok/install-poetry@v1.3.3
         with:
@@ -38,21 +40,5 @@ jobs:
           echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
           echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      - name: Black Code Formatter
-        uses: psf/black@stable
-
-      - name: isort Import Sorter
-        uses: isort/isort-action@v0.1.0
-
-      - name: pylint Error Checker
-        run: pylint -E -f colorized xray
-
       - name: mypy Static Type Checker
         run: mypy .
-
-      - name: Flynt f-string Formatter
-        run: >
-          flynt .
-          --line-length=79
-          --transform-concats
-          --fail-on-change

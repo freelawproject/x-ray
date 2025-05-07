@@ -61,7 +61,7 @@ for page1 in doc1:
 
         if r.is_empty:  # do not rely on meaningful rects
             print(
-                "skipping text of empty rect at (%g, %g) on page %i"
+                "skipping text of empty rect at (%g, %g) on page %i"  # noqa: UP031
                 % (r.x0, r.y0, page1.number)
             )
         else:
