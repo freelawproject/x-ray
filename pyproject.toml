@@ -1,54 +1,65 @@
-[tool.poetry]
-authors = ["Free Law Project <info@free.law>"]
-classifiers = [
-  "Development Status :: 5 - Production/Stable",
-  "Intended Audience :: Developers",
-  "Natural Language :: English",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
-  "Topic :: Software Development :: Libraries :: Python Modules",
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools",
 ]
-description = "A library and microservice to find bad redactions in PDFs"
-keywords = ["legal", "courts", "redactions"]
-license = "BSD-2-Clause"
-maintainers = ["Free Law Project <info@free.law>"]
-name = "x-ray"
-packages = [
-    {include = "xray"}
-]
-readme = "README.md"
-homepage = "https://free.law/projects/x-ray"
-repository = "https://github.com/freelawproject/x-ray"
-documentation = "https://github.com/freelawproject/x-ray/blob/main/README.md"
-version = "0.3.4"
 
-[tool.poetry.scripts]
+[project]
+name = "x-ray"
+version = "0.3.4"
+description = "A library and microservice to find bad redactions in PDFs"
+authors = [{ name = "Free Law Project", email = "info@free.law" }]
+requires-python = ">=3.9"
+readme = "README.md"
+license = "BSD-2-Clause"
+keywords = [
+    "legal",
+    "courts",
+    "redactions",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "PyMuPDF==1.24.11",
+    "requests>=2.26.0",
+]
+
+urls.Homepage = "https://free.law/projects/x-ray"
+urls.Repository = "https://github.com/freelawproject/x-ray"
+urls.Documentation = "https://github.com/freelawproject/x-ray/blob/main/README.md"
+urls."Organisation Homepage" = "https://free.law/"
+urls."Change Log" = "https://github.com/freelawproject/x-ray/blob/main/CHANGES.md"
+urls.Issues = "https://github.com/freelawproject/x-ray/issues"
+urls.Funding = "https://www.courtlistener.com/donate/?referrer=pypi-xray"
+
+[project.scripts]
 xray = "xray.__init__:cli"
 
-[tool.poetry.urls]
-"Organisation Homepage" = "https://free.law/"
-"Change Log" = "https://github.com/freelawproject/x-ray/blob/main/CHANGES.md"
-Issues = "https://github.com/freelawproject/x-ray/issues"
-Funding = "https://www.courtlistener.com/donate/?referrer=pypi-xray"
+[dependency-groups]
+dev = [
+    "mypy>=0.910",
+    "wheel>=0.38.2",
+    "pre-commit>=3.3.3",
+    "ipython>=8.12.0",
+    "types-requests>=2.26.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-PyMuPDF = "1.22.2"
-requests = "^2.26.0"
-types-requests = "^2.26.0"
-
-[tool.poetry.dev-dependencies]
-mypy = "^0.910"
-wheel = "^0.38.2"
-pre-commit = "^3.3.3"
-ipython = "^8.12.0"
+[tool.setuptools]
+packages = [ "xray" ]
 
 [tool.ruff]
 line-length = 79
@@ -82,7 +93,3 @@ lint.ignore = [
   # if-else-block-instead-of-if-exp
   "SIM108",
 ]
-
-[build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.0.0"]
