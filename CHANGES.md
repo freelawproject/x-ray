@@ -8,6 +8,8 @@
 
  - Dropped support for Python 3.7 and 3.8
  - Upgrade dependencies.
+ - Upgraded PyMuPDF to version 1.24.11 ([changelog](https://pymupdf.readthedocs.io/en/latest/changes.html)).
+   This version provides Python Stable ABI wheels, which avoids the need to compile the package on Python 3.12+.
 
 
 ## Current Version
