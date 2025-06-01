@@ -34,7 +34,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "PyMuPDF==1.24.11",
+    "PyMuPDF==1.26.0",
     "requests>=2.26.0",
 ]
 
