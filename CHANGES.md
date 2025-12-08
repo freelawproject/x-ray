@@ -6,6 +6,12 @@
 
 ## Upcoming Changes
 
+ - N/A
+
+## Current Version
+
+### v0.3.5, 2025-12-08
+
  - Dropped support for Python 3.7 and 3.8
  - Added support for Python 3.13
  - Upgrade dependencies.
@@ -15,12 +21,11 @@
  - Added support for Python 3.14
  - Upgraded PyMuPDF to version 1.24.14
 
-
-## Current Version
-
- - 0.3.4 (2023-05-17): Upgrade dependencies.
-
 ## Past Versions
+
+### v0.3.4, 2023-05-17
+
+ - Upgrade dependencies.
 
 ### v0.3.3, 2021-11-24
 
