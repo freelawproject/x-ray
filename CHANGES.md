@@ -10,6 +10,8 @@
 
 ## Current Version
 
+### v0.3.5, 2025-12-08
+
  - Dropped support for Python 3.7 and 3.8
  - Added support for Python 3.13
  - Upgrade dependencies.
