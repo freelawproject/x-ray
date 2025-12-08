@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "x-ray"
-version = "0.3.4"
+version = "0.3.5"
 description = "A library and microservice to find bad redactions in PDFs"
 authors = [{ name = "Free Law Project", email = "info@free.law" }]
 requires-python = ">=3.10"
