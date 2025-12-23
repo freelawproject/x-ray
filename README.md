@@ -25,10 +25,10 @@ help solving some of tougher cases.
 
 ## Installation
 
-With poetry, do:
+With uv, do:
 
 ```text
-poetry add x-ray
+uv add x-ray
 ```
 
 With pip, that'd be:
@@ -38,7 +38,14 @@ pip install x-ray
 
 ## Usage
 
-You can easily use this on the command line. Once installed, just:
+`uvx` lets you run this without even installing it. For example, here's an amicus brief we filed that doesn't have any bad redactions:
+
+```
+uvx --from x-ray xray https://storage.courtlistener.com/recap/gov.uscourts.ca3.125346/gov.uscourts.ca3.125346.45.0.pdf
+{}
+```
+
+Once you *do* install x-ray, you can easily use it on the command line. Once installed, just:
 
 ```bash
 % xray path/to/your/file.pdf
@@ -57,8 +64,7 @@ You can easily use this on the command line. Once installed, just:
 }
 ```
 
-Or if you have the file on a server somewhere, give it a URL. If it starts
-with `https://`, it will be interpreted as a PDF to download:
+Or if you have the file on a server somewhere, give it a URL. If it starts with `https://`, it will be interpreted as a PDF to download. Here's congressional testimonry our directory made (it doesn't have any bad redactions):
 
 ```bash
 % xray https://free.law/pdf/congressional-testimony-michael-lissner-free-law-project-hearing-on-ethics-and-transparency-2021-10-26.pdf
