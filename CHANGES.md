@@ -10,6 +10,13 @@
 
 ## Current Version
 
+### v0.3.6, 2025-12-24
+
+ - Happy holidays
+ - Fixes CLI export to be JSON not Python object ([issue](https://github.com/freelawproject/x-ray/issues/189))
+
+## Past Versions
+
 ### v0.3.5, 2025-12-08
 
  - Dropped support for Python 3.7 and 3.8
@@ -20,8 +27,6 @@
  - Dropped support for Python 3.9
  - Added support for Python 3.14
  - Upgraded PyMuPDF to version 1.24.14
-
-## Past Versions
 
 ### v0.3.4, 2023-05-17
 
