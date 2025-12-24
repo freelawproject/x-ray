@@ -103,29 +103,35 @@ def intersects(
     :return True if any part of the bbox intersects with any of the rectangles,
     else False.
     """
-    for rect in rectangles + [text_rect]:
-        assert all([hasattr(rect, "seqno"), hasattr(rect, "fill")]), (
-            "Rectangle lacks required 'seqno' or 'fill' attribute."
-        )
+    rects_to_check = rectangles + [text_rect]
+    for rect in rects_to_check:
+        if not (hasattr(rect, "seqno") and hasattr(rect, "fill")):
+            raise AssertionError(
+                "Rectangle lacks required 'seqno' or 'fill' attribute."
+            )
 
-    overlapping_areas = []
-    for rect in rectangles:
-        intersecting_area = abs(text_rect & rect)
-        if intersecting_area > 0 and rect.seqno > text_rect.seqno:
-            # Intersecting text was drawn first, meaning it's behind the rect.
-            overlapping_areas.append(intersecting_area)
-            continue
-        if intersecting_area > 0 and rect.fill == text_rect.fill:
-            # Intersecting and same color. This makes text invisible even if
-            # it's drawn on top of the rect.
-            overlapping_areas.append(intersecting_area)
-            continue
-
-    if not overlapping_areas:
+    area_of_bbox = text_rect.get_area()
+    if area_of_bbox == 0:
         return False
 
-    greatest_occluded = max(overlapping_areas)
-    area_of_bbox = abs(text_rect.get_area())
+    greatest_occluded = 0.0
+    fill = text_rect.fill
+    seqno = text_rect.seqno
+
+    for rect in rectangles:
+        intersecting_area = abs(text_rect & rect)
+        if (
+            intersecting_area > 0
+            and (rect.seqno > seqno or rect.fill == fill)
+            and intersecting_area > greatest_occluded
+        ):
+            greatest_occluded = intersecting_area
+            # Short-circuit if full occlusion already exceeded
+            if greatest_occluded / area_of_bbox > occlusion_threshold:
+                return True
+
+    if greatest_occluded == 0.0:
+        return False
 
     percent_occluded = greatest_occluded / area_of_bbox
     return percent_occluded > occlusion_threshold
