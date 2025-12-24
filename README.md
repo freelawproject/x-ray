@@ -64,7 +64,7 @@ Once you *do* install x-ray, you can easily use it on the command line. Once ins
 }
 ```
 
-Or if you have the file on a server somewhere, give it a URL. If it starts with `https://`, it will be interpreted as a PDF to download. Here's congressional testimony our directory made (it doesn't have any bad redactions):
+Or if you have the file on a server somewhere, give it a URL. If it starts with `https://`, it will be interpreted as a PDF to download. Here's congressional testimony our director made (it doesn't have any bad redactions):
 
 ```bash
 % xray https://free.law/pdf/congressional-testimony-michael-lissner-free-law-project-hearing-on-ethics-and-transparency-2021-10-26.pdf
