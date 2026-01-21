@@ -41,7 +41,7 @@ pip install x-ray
 
 ## Usage
 
-`uvx` lets you run this without even installing it. For example, here's an amicus brief we filed that doesn't have any bad redactions:
+`uvx` lets you run this without even installing it. For example, here's an amicus brief we filed that doesn't have any bad redactions, so it returns an empty dict:
 
 ```
 uvx --from x-ray xray https://storage.courtlistener.com/recap/gov.uscourts.ca3.125346/gov.uscourts.ca3.125346.45.0.pdf
