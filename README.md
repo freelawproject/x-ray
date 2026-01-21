@@ -10,9 +10,12 @@ way, they just draw a black rectangle or a black highlight on top of black
 text and call it a day. Well, when that happens you just select the text under
 the rectangle, and you can read it again. Not great.
 
-After witnessing this problem for years, we decided it would be good to figure
-out how common it is, so, with some help, we built this simple tool. You give
-the tool the path to a PDF. It tells you if it has worthless redactions in it.
+After witnessing this problem for years (our favorite is the doc that shared 
+Taylor Swift's personal phone number), we decided it would be good to do
+something about it. 
+
+This tool is our answer. You give the tool the path to a PDF. It tells you if 
+it has worthless redactions in it and whether to call Taylor (don't).
 
 
 ## What next?
