@@ -278,6 +278,45 @@ def filter_redactions_by_pixmap(
     return bad_redactions
 
 
+def get_unapplied_redact_annotations(page: Page) -> list[RedactionType]:
+    """Find Redact annotations that haven't been applied.
+
+    Unapplied Redact annotations mark text for redaction but leave the text
+    visible and extractable. These are bad redactions because the text that
+    was supposed to be hidden is still readable.
+
+    :param page: The PyMuPDF Page to look for annotations within.
+    :returns: A list of RedactionType dicts for each unapplied redaction
+    annotation that contains text within the visible page area.
+    """
+    redactions = []
+    for annot in page.annots() or []:
+        if annot.type[0] != fitz.PDF_ANNOT_REDACT:
+            continue
+
+        annot_rect = annot.rect
+        if not annot_rect.intersects(page.rect):
+            continue
+
+        # Clip to visible area
+        visible_rect = annot_rect & page.rect
+        text = page.get_text("text", clip=visible_rect)
+        text = " ".join(text.split())
+        if text:
+            redaction: RedactionType = {
+                "bbox": (
+                    visible_rect.x0,
+                    visible_rect.y0,
+                    visible_rect.x1,
+                    visible_rect.y1,
+                ),
+                "text": text,
+            }
+            redactions.append(redaction)
+
+    return redactions
+
+
 def get_bad_redactions(page: Page) -> list[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
@@ -290,4 +329,10 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
     bad_redactions = filter_redactions_by_text(redactions)
     bad_redactions = filter_redactions_by_pixmap(bad_redactions, page)
+
+    # Also detect unapplied Redact annotations
+    unapplied = get_unapplied_redact_annotations(page)
+    unapplied = filter_redactions_by_text(unapplied)
+    bad_redactions.extend(unapplied)
+
     return bad_redactions

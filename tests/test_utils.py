@@ -375,3 +375,24 @@ class IntegrationTest(TestCase):
             {},
             msg="Got redactions on a multiline redaction, but shouldn't have.",
         )
+
+    def test_unapplied_redact_annotations(self):
+        """Do unapplied Redact annotations get flagged as bad redactions?
+
+        When a PDF has Redact annotations that were never applied, the text
+        underneath is still visible and extractable. This should be treated
+        as a bad redaction.
+        """
+        path = root_path / "red_rectangle.pdf"
+        redactions = xray.inspect(path)
+        self.assertTrue(
+            redactions,
+            msg="Expected bad redactions from unapplied Redact annotations, "
+            "but got none.",
+        )
+        self.assertEqual(
+            len(redactions[1]),
+            2,
+            msg=f"Expected 2 bad redactions from unapplied Redact "
+            f"annotations, got {len(redactions.get(1, []))}.",
+        )

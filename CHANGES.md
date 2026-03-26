@@ -6,7 +6,7 @@
 
 ## Upcoming Changes
 
- - N/A
+ - Detect unapplied Redact annotations as bad redactions ([issue](https://github.com/freelawproject/x-ray/issues/194))
 
 ## Current Version
 
