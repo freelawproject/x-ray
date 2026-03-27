@@ -19,8 +19,8 @@ def get_good_rectangles(page: Page) -> list[Rect]:
     """Find rectangles in the PDFs that might be redactions.
 
     :param page: The PyMuPDF Page to look for rectangles within.
-    :returns A list of PyMUPDF.Rect objects for each non-white, fully opaque
-    rectangle that's big enough to be a possible redaction. If none, returns
+    :returns A list of PyMUPDF.Rect objects for each fully opaque rectangle
+    that's big enough to be a possible redaction. If none, returns
     an empty list. Also enhances the Rect object by including the sequence
     number and fill color of the parent drawing. This allows us to later
     determine if a letter is above or below a rectangle or whether it's the
@@ -274,6 +274,14 @@ def filter_redactions_by_pixmap(
             # filename = f'{redaction["text"].replace("/", "_")}.png'
             # pixmap.save(filename)
             continue
+        else:
+            # Unicolor pixmap. Is it white? if so, a white unicolor area means
+            # a white rectangle on a white background. The text is visually
+            # invisible, but not a bad redaction. This is a common source of
+            # false positives.
+            pixel = pixmap.pixel(0, 0)
+            if all(c == 255 for c in pixel):
+                continue
         bad_redactions.append(redaction)
     return bad_redactions
 
