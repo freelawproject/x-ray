@@ -376,6 +376,17 @@ class IntegrationTest(TestCase):
             msg="Got redactions on a multiline redaction, but shouldn't have.",
         )
 
+    def test_white_on_white_no_results(self):
+        """Do white rectangles on white backgrounds get ignored?"""
+        path = root_path / "white_on_white.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from white-on-white rectangle, "
+            "but shouldn't have.",
+        )
+
     def test_unapplied_redact_annotations(self):
         """Do unapplied Redact annotations get flagged as bad redactions?
 
