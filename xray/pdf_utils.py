@@ -365,6 +365,7 @@ def filter_redactions_by_pixmap(
         # These are typically form fields or layout elements, not
         # intentional redaction attempts, and are a common source of
         # false positives (see GitHub issue #196).
+        assert dominant is not None  # guaranteed when nearly_uniform is True
         if all(c == 255 for c in dominant):
             continue
         bad_redactions.append(redaction)
