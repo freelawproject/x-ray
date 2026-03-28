@@ -12,6 +12,7 @@
  - Filter "__________ District of __________" court form boilerplate as false positive
  - Filter single-character redactions as false positives
  - Filter "CAUTION - EXTERNAL EMAIL" banner boilerplate as false positive
+ - Filter repeated chars with spaces/punctuation (e.g., "XXXXX XXXX") as false positives
 
 ## Current Version
 

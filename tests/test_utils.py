@@ -387,6 +387,17 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_repeated_chars_with_spaces_no_results(self):
+        """Are repeated chars with spaces filtered? (e.g., 'XXXXX XXXX')"""
+        path = root_path / "repeated_chars_with_spaces.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from repeated chars with spaces, "
+            "but shouldn't have.",
+        )
+
     def test_external_email_banner_no_results(self):
         """Is the 'CAUTION - EXTERNAL EMAIL' banner ignored?"""
         path = root_path / "external_email_banner.pdf"
