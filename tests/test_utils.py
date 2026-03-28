@@ -387,6 +387,17 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_underscore_district_of_no_results(self):
+        """Is the '__________ District of __________' form pattern ignored?"""
+        path = root_path / "underscore_district_of.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from court form 'District of' field, "
+            "but shouldn't have.",
+        )
+
     def test_near_black_redaction_bars(self):
         """Are nearly-unicolor dark redaction bars detected?
 
