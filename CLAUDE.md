@@ -15,6 +15,7 @@ tests/
 └── assets/             # Test PDF files
 tools/                  # Developer utilities for investigating PDFs
 ├── layout-analyzer.py  # Visualize page layout (text blocks, images, CropBox)
+├── quick-inspect.py    # Run xray.inspect() and print results
 ├── inspect-pdf.py      # Dump redaction-relevant PDF structure (drawings, colors, annotations)
 └── debug-pipeline.py   # Step through x-ray's detection pipeline showing kept/dropped at each stage
 ```
@@ -24,6 +25,9 @@ tools/                  # Developer utilities for investigating PDFs
 When investigating a PDF, use the tools in `tools/` before writing ad-hoc scripts:
 
 ```bash
+# What does x-ray currently detect?
+.venv/bin/python tools/quick-inspect.py some.pdf
+
 # What does this PDF look like structurally?
 .venv/bin/python tools/inspect-pdf.py some.pdf --page 0
 
