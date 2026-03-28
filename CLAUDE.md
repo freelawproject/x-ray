@@ -56,6 +56,17 @@ CI runs tests via tox across Python 3.10-3.14.
 1. **Use real-world PDFs** from issues as test assets, not synthetic/generated PDFs.
 2. **Use the venv python** (`.venv/bin/python`) when running commands.
 
+## Pre-commit and Linting
+
+Before committing, run pre-commit and mypy to catch issues early. The git hooks will run pre-commit automatically, but running them manually first avoids failed commits:
+
+```bash
+.venv/bin/python -m pre_commit run --all-files
+uv run mypy .
+```
+
+CI runs both of these — if either fails, the PR will not pass.
+
 ## Coding Rules
 
 1. **Commits**: Follow conventional commit format: `type(scope): message`
