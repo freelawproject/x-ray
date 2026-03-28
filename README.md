@@ -159,6 +159,10 @@ You can read the source to see how it works, but the general idea is to:
    bad redaction. If not, then we assume you can see a mix of text and
    drawings, indicating a redaction that's OK.
 
+5. Filter out common false positives: single characters, repeated characters
+   (like "XXXX"), whitespace, known boilerplate words (like "REDACTED"),
+   and white-on-white rectangles.
+
 The PDF format is a big and complicated one, so it's difficult to do all this perfectly. We do our best, but there's always more to do to make it better. [Donations][d] and sponsored work help.
 
 [d]: https://free.law/donate/

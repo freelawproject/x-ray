@@ -42,11 +42,11 @@ When investigating a PDF, use the tools in `tools/` before writing ad-hoc script
 ## Running Tests
 
 ```bash
-# Create venv and install deps
-uv venv && uv pip install -e ".[dev]" && uv pip install pytest
+# Create venv and install deps (including pytest, mypy, pre-commit)
+uv sync --group dev
 
 # Run tests
-python -m pytest tests/test_utils.py -v
+.venv/bin/python -m pytest tests/test_utils.py -v
 ```
 
 CI runs tests via tox across Python 3.10-3.14.

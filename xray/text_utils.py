@@ -21,6 +21,20 @@ def is_repeated_chars(text: str) -> bool:
     return len(set(text)) == 1
 
 
+def is_single_char(text: str) -> bool:
+    """Check if text contains only a single alphanumeric character.
+
+    A single letter or digit — possibly surrounded by whitespace or
+    punctuation — is not meaningful redacted content.  These commonly
+    appear when a rectangle slightly overlaps an adjacent character
+    (e.g., a page number or list marker).
+
+    :param text: A string to check
+    :returns: True if there is at most one alphanumeric character
+    """
+    return len(re.findall(r"[\w\d]", text)) <= 1
+
+
 def is_ok_words(text: str) -> bool:
     """Check if the redaction is one of several words that are OK
 

@@ -9,7 +9,7 @@ import fitz
 from fitz import Page, Rect
 
 from .custom_types import CharDictType, RedactionType
-from .text_utils import is_ok_words, is_repeated_chars
+from .text_utils import is_ok_words, is_repeated_chars, is_single_char
 
 # Disable anti-aliasing when rendering and creating pixmaps
 fitz.TOOLS.set_aa_level(0)
@@ -251,6 +251,9 @@ def filter_redactions_by_text(
     """
     # Isn't just repeated text like XXXX
     redactions = filter(lambda r: not is_repeated_chars(r["text"]), redactions)
+
+    # Isn't just a single character (possibly with whitespace/punctuation)
+    redactions = filter(lambda r: not is_single_char(r["text"]), redactions)
 
     # Has non-whitespace content and isn't blank
     redactions = filter(lambda r: r["text"].strip(), redactions)
