@@ -52,8 +52,12 @@ def is_ok_words(text: str) -> bool:
     """
     text = " ".join(text.strip().split())
     text = re.sub(
-        r"confidential|name +redacted|privileged?|re|red|reda|redac|redact|"
-        r"redacte|redacted|redacted +and +publicly +filed|"
+        # Longest patterns first — regex alternation is left-to-right, so
+        # "re" must not consume the start of "redacted" before the longer
+        # pattern gets a chance to match.
+        r"redacted +and +publicly +filed|name +redacted|"
+        r"confidential|privileged?|"
+        r"redacted|redacte|redact|redac|reda|red|re|"
         # Court form boilerplate: blank lines with "District of" between
         # them (e.g., "__________ District of __________").  These are
         # fill-in-the-blank fields on standard court cover sheets, not
