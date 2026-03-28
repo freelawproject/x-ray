@@ -11,6 +11,7 @@
  - Detect nearly-unicolor redaction bars that have slight color variations
  - Filter "__________ District of __________" court form boilerplate as false positive
  - Filter single-character redactions as false positives
+ - Filter "CAUTION - EXTERNAL EMAIL" banner boilerplate as false positive
 
 ## Current Version
 

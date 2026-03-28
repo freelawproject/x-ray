@@ -49,7 +49,14 @@ def is_ok_words(text: str) -> bool:
         # them (e.g., "__________ District of __________").  These are
         # fill-in-the-blank fields on standard court cover sheets, not
         # redacted content.
-        r"_+\s*district\s+of\s*_+|",
+        r"_+\s*district\s+of\s*_+|"
+        # Email security banners that get hidden behind yellow
+        # highlight rectangles in court filings.  The banner text
+        # often spans multiple rectangles, so we match both the full
+        # banner and its common tail fragment.
+        r"caution\s*-?\s*external\s+e-?mail[^|]*|"
+        r"(exercise\s+caution\s+when\s+opening\s+)?"
+        r"attachments\s+or\s+clicking\s+on\s+links\.?|",
         "",
         text,
         flags=re.IGNORECASE | re.MULTILINE,
