@@ -387,6 +387,20 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_near_black_redaction_bars(self):
+        """Are nearly-unicolor dark redaction bars detected?
+
+        Some PDFs render solid redaction bars with two nearly
+        identical dark colors (e.g., differing by 1 per channel).
+        These should still be flagged as bad redactions.
+        """
+        path = root_path / "near_black_redaction_bars.pdf"
+        redactions = xray.inspect(path)
+        self.assertTrue(
+            redactions,
+            msg="Expected bad redactions from near-black bars, but got none.",
+        )
+
     def test_unapplied_redact_annotations(self):
         """Do unapplied Redact annotations get flagged as bad redactions?
 

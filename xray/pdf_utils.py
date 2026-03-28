@@ -61,6 +61,21 @@ def get_good_rectangles(page: Page) -> list[Rect]:
         # the above example would yield two rectangles ("re" types).
         rectangles = [item[1] for item in drawing["items"] if item[0] == "re"]
 
+        if not rectangles:
+            # Some redaction tools draw rounded rectangles using lines
+            # ("l") and bezier curves ("c") instead of the "re" draw
+            # command.  These shapes have no "re" items, but the
+            # drawing's outer "rect" key gives us a usable bounding
+            # box.
+            #
+            # It is safe to fall back to drawing["rect"] here because
+            # the multi-line redaction problem described above only
+            # occurs when a single drawing contains multiple "re"
+            # items whose combined bounding box is wider than each
+            # individual bar.  A drawing with zero "re" items is a
+            # single shape, so its bounding box is correct.
+            rectangles = [fitz.Rect(drawing["rect"])]
+
         for rectangle in rectangles:
             # Give it the sequence number and color of its parent drawing
             rectangle.seqno = drawing["seqno"]
@@ -250,6 +265,68 @@ def filter_redactions_by_text(
     return list(redactions)
 
 
+def _is_nearly_unicolor(
+    pixmap: fitz.Pixmap,
+    tolerance: int = 5,
+) -> tuple[bool, tuple[int, ...] | None]:
+    """Check if a pixmap is nearly uniform in color.
+
+    Some PDFs render solid redaction bars with slight color
+    variations (e.g., two shades of dark gray differing by 1 per
+    channel). PyMuPDF's is_unicolor misses these.
+
+    To handle this while avoiding false positives from visible text
+    on colored backgrounds, this function checks the interior pixels
+    (excluding a 1px border) for uniformity within ``tolerance``.
+    Edge pixels are excluded because rendering artifacts (stray
+    white pixels) commonly appear at rectangle boundaries.
+
+    :param pixmap: The pixmap to check.
+    :param tolerance: Max per-channel difference from the first
+    interior pixel for another pixel to count as matching.
+    :returns: A (is_uniform, dominant_color) tuple. dominant_color
+    is None when is_uniform is False.
+    """
+    # Fast path: PyMuPDF's native check handles the common case of
+    # a perfectly uniform pixmap (e.g., a solid black bar).
+    if pixmap.is_unicolor:
+        return True, pixmap.pixel(0, 0)
+
+    w, h = pixmap.width, pixmap.height
+    if w <= 2 or h <= 2:
+        # Too small to have a meaningful interior after excluding
+        # the 1px border — bail out conservatively.
+        return False, None
+
+    samples = pixmap.samples
+    n = pixmap.n  # bytes per pixel (3 for RGB, 4 for RGBA)
+
+    # Walk only the interior pixels (skip the 1px border on every
+    # side).  The first interior pixel becomes the reference color;
+    # every subsequent pixel must be within ``tolerance`` of it on
+    # every channel.
+    #
+    # Why exclude the border?  When PyMuPDF renders a clipped region
+    # at 72 DPI with anti-aliasing disabled, stray white pixels
+    # frequently appear along the edges of the clip rectangle.
+    # These are rendering artifacts, not content, and including them
+    # would cause truly solid bars to fail the uniformity check.
+    ref = None
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            offset = (y * w + x) * n
+            pixel = tuple(samples[offset : offset + n])
+            if ref is None:
+                ref = pixel
+            elif any(abs(a - b) > tolerance for a, b in zip(pixel, ref)):
+                # Found an interior pixel that differs meaningfully
+                # from the reference — this pixmap contains visible
+                # content (e.g., text rendered on a colored
+                # background), not just a solid bar.
+                return False, None
+    return True, ref
+
+
 def filter_redactions_by_pixmap(
     redactions: list[RedactionType],
     page: Page,
@@ -268,20 +345,29 @@ def filter_redactions_by_pixmap(
             colorspace=fitz.csRGB,
             clip=fitz.Rect(redaction["bbox"]),
         )
-        if not pixmap.is_unicolor:
-            # There's some degree of variation in the colors of the pixels.
-            # ∴ it's not a uniform box and it's not a bad redaction.
-            # filename = f'{redaction["text"].replace("/", "_")}.png'
-            # pixmap.save(filename)
+        nearly_uniform, dominant = _is_nearly_unicolor(pixmap)
+        if not nearly_uniform:
+            # The interior pixels vary meaningfully — the rendered
+            # region contains visible content (text, patterns, etc.)
+            # on top of the rectangle.  ∴ it's not a uniform box
+            # hiding text and it's not a bad redaction.
+            #
+            # This replaces the old ``pixmap.is_unicolor`` check,
+            # which was too strict: some PDFs render solid redaction
+            # bars as two nearly-identical dark colors (e.g.,
+            # RGB(34,31,31) and RGB(35,31,32)), causing PyMuPDF to
+            # consider them non-uniform even though they are visually
+            # indistinguishable.
             continue
-        else:
-            # Unicolor pixmap. Is it white? if so, a white unicolor area means
-            # a white rectangle on a white background. The text is visually
-            # invisible, but not a bad redaction. This is a common source of
-            # false positives.
-            pixel = pixmap.pixel(0, 0)
-            if all(c == 255 for c in pixel):
-                continue
+        # The pixmap is (nearly) uniform.  Now check whether that
+        # uniform color is white: a white rectangle on a white page
+        # background means the text is already visually invisible.
+        # These are typically form fields or layout elements, not
+        # intentional redaction attempts, and are a common source of
+        # false positives (see GitHub issue #196).
+        assert dominant is not None  # guaranteed when nearly_uniform is True
+        if all(c == 255 for c in dominant):
+            continue
         bad_redactions.append(redaction)
     return bad_redactions
 
