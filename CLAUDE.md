@@ -15,6 +15,7 @@ tests/
 └── assets/             # Test PDF files
 tools/                  # Developer utilities for investigating PDFs
 ├── layout-analyzer.py  # Visualize page layout (text blocks, images, CropBox)
+├── quick-inspect.py    # Run xray.inspect() and print results
 ├── inspect-pdf.py      # Dump redaction-relevant PDF structure (drawings, colors, annotations)
 └── debug-pipeline.py   # Step through x-ray's detection pipeline showing kept/dropped at each stage
 ```
@@ -24,6 +25,9 @@ tools/                  # Developer utilities for investigating PDFs
 When investigating a PDF, use the tools in `tools/` before writing ad-hoc scripts:
 
 ```bash
+# What does x-ray currently detect?
+.venv/bin/python tools/quick-inspect.py some.pdf
+
 # What does this PDF look like structurally?
 .venv/bin/python tools/inspect-pdf.py some.pdf --page 0
 
@@ -51,6 +55,17 @@ CI runs tests via tox across Python 3.10-3.14.
 
 1. **Use real-world PDFs** from issues as test assets, not synthetic/generated PDFs.
 2. **Use the venv python** (`.venv/bin/python`) when running commands.
+
+## Pre-commit and Linting
+
+Before committing, run pre-commit and mypy to catch issues early. The git hooks will run pre-commit automatically, but running them manually first avoids failed commits:
+
+```bash
+.venv/bin/python -m pre_commit run --all-files
+uv run mypy .
+```
+
+CI runs both of these — if either fails, the PR will not pass.
 
 ## Coding Rules
 

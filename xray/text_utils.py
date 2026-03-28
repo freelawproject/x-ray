@@ -30,7 +30,12 @@ def is_ok_words(text: str) -> bool:
     text = " ".join(text.strip().split())
     text = re.sub(
         r"confidential|name +redacted|privileged?|re|red|reda|redac|redact|"
-        r"redacte|redacted|redacted +and +publicly +filed|",
+        r"redacte|redacted|redacted +and +publicly +filed|"
+        # Court form boilerplate: blank lines with "District of" between
+        # them (e.g., "__________ District of __________").  These are
+        # fill-in-the-blank fields on standard court cover sheets, not
+        # redacted content.
+        r"_+\s*district\s+of\s*_+|",
         "",
         text,
         flags=re.IGNORECASE | re.MULTILINE,
