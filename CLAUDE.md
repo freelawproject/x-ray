@@ -13,7 +13,27 @@ xray/                   # Main package
 tests/
 ├── test_utils.py       # Test suite
 └── assets/             # Test PDF files
+tools/                  # Developer utilities for investigating PDFs
+├── layout-analyzer.py  # Visualize page layout (text blocks, images, CropBox)
+├── inspect-pdf.py      # Dump redaction-relevant PDF structure (drawings, colors, annotations)
+└── debug-pipeline.py   # Step through x-ray's detection pipeline showing kept/dropped at each stage
 ```
+
+## Debugging Tools
+
+When investigating a PDF, use the tools in `tools/` before writing ad-hoc scripts:
+
+```bash
+# What does this PDF look like structurally?
+.venv/bin/python tools/inspect-pdf.py some.pdf --page 0
+
+# Where in the pipeline does detection fail or succeed?
+.venv/bin/python tools/debug-pipeline.py some.pdf --page 0
+```
+
+`inspect-pdf.py` shows the raw PDF structure: fill colors, drawing types (`re` vs lines+curves), annotations, and text spans. Use it first to understand what's in the PDF.
+
+`debug-pipeline.py` runs the actual x-ray detection pipeline step by step, showing counts at each stage and color analysis for pixmap-filtered entries. Use it to pinpoint exactly where detection fails.
 
 ## Running Tests
 
