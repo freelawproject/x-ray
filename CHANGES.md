@@ -13,6 +13,7 @@
  - Filter single-character redactions as false positives
  - Filter "CAUTION - EXTERNAL EMAIL" banner boilerplate as false positive
  - Filter repeated chars with spaces/punctuation (e.g., "XXXXX XXXX") as false positives
+ - Fix "REDACTED" label not being filtered due to regex alternation ordering bug
 
 ## Current Version
 
