@@ -8,6 +8,7 @@
 
  - Detect unapplied Redact annotations as bad redactions ([issue](https://github.com/freelawproject/x-ray/issues/194))
  - Skip white-on-white redactions to reduce false positives ([issue](https://github.com/freelawproject/x-ray/issues/196))
+ - Detect nearly-unicolor redaction bars that have slight color variations
 
 ## Current Version
 

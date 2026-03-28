@@ -38,3 +38,4 @@ CI runs tests via tox across Python 3.10-3.14.
 2. **Style**: Ruff is configured in pyproject.toml (line-length 79)
 3. **Dependencies**: Use `uv` for dependency management
 4. **Changelog**: Every PR MUST include an update to `CHANGES.md`. Add entries under the "Upcoming Changes" section. CI will fail without this.
+5. **Comments**: Write thorough comments explaining *why* code exists, not just *what* it does. PDF rendering is full of non-obvious edge cases (rendering artifacts, color space quirks, winding rules, etc.) and future contributors need to understand the reasoning behind each check. Explain the failure mode that motivated the code.
