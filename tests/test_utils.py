@@ -387,6 +387,17 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_external_email_banner_no_results(self):
+        """Is the 'CAUTION - EXTERNAL EMAIL' banner ignored?"""
+        path = root_path / "external_email_banner.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from external email banner, "
+            "but shouldn't have.",
+        )
+
     def test_underscore_district_of_no_results(self):
         """Is the '__________ District of __________' form pattern ignored?"""
         path = root_path / "underscore_district_of.pdf"
