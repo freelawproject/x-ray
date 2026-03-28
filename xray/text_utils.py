@@ -9,7 +9,10 @@ def is_repeated_chars(text: str) -> bool:
     """Find repeated characters in a redaction.
 
     This often indicates something like XXXXXXXX under the redaction or a bunch
-    of space, etc.
+    of space, etc.  Also catches cases like "XXXXX XXXX" or "XXXXXXXXX]"
+    where a single character is repeated with incidental whitespace or
+    punctuation mixed in — these are redaction placeholders, not real
+    content.
 
     :param text: A string to check
     :returns: True if only repeated characters, else False
@@ -18,7 +21,13 @@ def is_repeated_chars(text: str) -> bool:
         return False
 
     # Return True if there's only one unique character in the string
-    return len(set(text)) == 1
+    if len(set(text)) == 1:
+        return True
+
+    # Strip whitespace and punctuation, then check if only one unique
+    # alphanumeric character remains (e.g., "XXXXX XXXX" → "XXXXXXXXX").
+    alphanumeric = re.sub(r"[^a-zA-Z0-9]", "", text)
+    return len(alphanumeric) > 1 and len(set(alphanumeric)) == 1
 
 
 def is_single_char(text: str) -> bool:
