@@ -397,6 +397,11 @@ def filter_redactions_by_pixmap(
             colorspace=fitz.csRGB,
             clip=fitz.Rect(redaction["bbox"]),
         )
+        # Guard against degenerate pixmaps (zero width or height).
+        # PyMuPDF can produce these from certain clip rectangles and
+        # segfaults if you then access is_unicolor or samples.
+        if pixmap.width == 0 or pixmap.height == 0:
+            continue
         nearly_uniform, dominant = _is_nearly_unicolor(pixmap)
         if not nearly_uniform:
             continue
