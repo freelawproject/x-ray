@@ -14,6 +14,7 @@
  - Filter "CAUTION - EXTERNAL EMAIL" banner boilerplate as false positive
  - Filter repeated chars with spaces/punctuation (e.g., "XXXXX XXXX") as false positives
  - Fix "REDACTED" label not being filtered due to regex alternation ordering bug
+ - Filter garbled text from custom font encodings (Unicode replacement characters)
 
 ## Current Version
 
