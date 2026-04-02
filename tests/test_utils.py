@@ -398,6 +398,15 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_short_text_redaction(self):
+        """Are short but real redactions (e.g., '34') still detected?"""
+        path = root_path / "short_text_redaction.pdf"
+        redactions = xray.inspect(path)
+        self.assertTrue(
+            redactions,
+            msg="Expected bad redactions from short text, but got none.",
+        )
+
     def test_bright_colored_sidebar_no_results(self):
         """Are bright-colored design elements (sidebars, etc.) ignored?"""
         path = root_path / "bright_colored_sidebar.pdf"
