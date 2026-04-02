@@ -398,6 +398,17 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_custom_font_encoding_no_results(self):
+        """Is garbled text from custom font encodings ignored?"""
+        path = root_path / "custom_font_encoding.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from undecodable font encoding, "
+            "but shouldn't have.",
+        )
+
     def test_redacted_label_no_results(self):
         """Is the word 'REDACTED' under a black bar ignored?"""
         path = root_path / "redacted_label.pdf"
