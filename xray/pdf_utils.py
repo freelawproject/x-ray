@@ -377,6 +377,22 @@ def filter_redactions_by_pixmap(
         assert dominant is not None  # guaranteed when nearly_uniform is True
         if all(c == 255 for c in dominant):
             continue
+        # Check if the dominant color is too bright to be a redaction.
+        # Redactions are meant to hide text, so they're almost always
+        # dark (black, dark gray, dark navy).  Bright colors like teal,
+        # yellow, orange, or green are design elements (sidebars, slide
+        # backgrounds, decorative bars), not redaction attempts.
+        #
+        # We use perceived luminance (ITU-R BT.601) on a 0–255 scale:
+        #   black (0,0,0) → 0,  dark gray (34,31,31) → 32,
+        #   teal (0,173,198) → 124,  yellow (255,255,0) → 227
+        #
+        # A threshold of 100 is generous enough to keep even dark
+        # blue/navy bars while filtering anything clearly colored.
+        r, g, b = dominant[0], dominant[1], dominant[2]
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        if luminance > 100:
+            continue
         bad_redactions.append(redaction)
     return bad_redactions
 
