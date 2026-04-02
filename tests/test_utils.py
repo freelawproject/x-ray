@@ -398,6 +398,17 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_bright_colored_sidebar_no_results(self):
+        """Are bright-colored design elements (sidebars, etc.) ignored?"""
+        path = root_path / "bright_colored_sidebar.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from bright-colored sidebar, "
+            "but shouldn't have.",
+        )
+
     def test_custom_font_encoding_no_results(self):
         """Is garbled text from custom font encodings ignored?"""
         path = root_path / "custom_font_encoding.pdf"
