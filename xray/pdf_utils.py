@@ -265,6 +265,12 @@ def filter_redactions_by_text(
     # Has OK words in redaction
     redactions = filter(lambda r: is_ok_words(r["text"]), redactions)
 
+    # Doesn't contain Unicode replacement characters (U+FFFD).  These
+    # appear when a PDF uses a custom font encoding that PyMuPDF can't
+    # decode.  The extracted "text" is encoding gibberish, not readable
+    # content, so it's not a meaningful redaction.
+    redactions = filter(lambda r: "\ufffd" not in r["text"], redactions)
+
     return list(redactions)
 
 
