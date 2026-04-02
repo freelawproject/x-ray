@@ -336,62 +336,72 @@ def _is_nearly_unicolor(
     return True, ref
 
 
+def _is_dark_color(
+    color: tuple[int, ...],
+    luminance_threshold: int = 100,
+) -> bool:
+    """Check whether an RGB color is dark enough to be a redaction.
+
+    Redactions are meant to hide text, so they use dark colors (black,
+    dark gray, dark navy).  Bright colors — teal sidebars, yellow
+    highlights, orange slide elements — are design elements.
+
+    Also rejects white (all channels 255), which indicates a white
+    rectangle on a white page background (form fields, layout
+    elements — see GitHub issue #196).
+
+    Uses ITU-R BT.601 perceived luminance on a 0–255 scale::
+
+        black (0,0,0)→0  dark gray (34,31,31)→32
+        teal (0,173,198)→124  yellow (255,255,0)→227
+
+    :param color: An RGB tuple with integer channels 0–255.
+    :param luminance_threshold: Maximum perceived brightness for a
+        color to be considered "dark enough" for a redaction.
+    :returns: True if the color is dark (plausible redaction).
+    """
+    if all(c == 255 for c in color):
+        return False
+    luminance = 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
+    return luminance <= luminance_threshold
+
+
 def filter_redactions_by_pixmap(
     redactions: list[RedactionType],
     page: Page,
 ) -> list[RedactionType]:
-    """Convert each bad redaction to an image and check it for text
+    """Filter candidate redactions by rendering each as a pixmap.
+
+    A bad redaction is a solid, dark-colored rectangle hiding text.
+    This function renders each candidate region and checks two things:
+
+    1. **Uniformity** — Is the rendered area (nearly) one color?  If
+       not, the rectangle contains visible content and isn't hiding
+       anything.  Uses ``_is_nearly_unicolor`` which tolerates slight
+       rendering variations (e.g., two dark grays differing by 1 per
+       channel) and ignores a 1px edge border where stray pixels from
+       rounded corners commonly appear.
+
+    2. **Darkness** — Is that uniform color dark?  White rectangles
+       are form fields; bright colors (teal, yellow, orange) are
+       design elements.  Only dark colors indicate a redaction.
 
     :param redactions: A list of redactions that might be bad
-    :param page: The PyMuPDF.Page object where the bad redactions might be
-    :return: The redactions, if they are valid
+    :param page: The PyMuPDF.Page object where the bad redactions
+        might be
+    :return: The redactions that are actually bad
     """
     bad_redactions = []
     for redaction in redactions:
         pixmap = page.get_pixmap(
-            # Use gray for simplicity and speed, though this risks missing a
-            # bad redaction.
             colorspace=fitz.csRGB,
             clip=fitz.Rect(redaction["bbox"]),
         )
         nearly_uniform, dominant = _is_nearly_unicolor(pixmap)
         if not nearly_uniform:
-            # The interior pixels vary meaningfully — the rendered
-            # region contains visible content (text, patterns, etc.)
-            # on top of the rectangle.  ∴ it's not a uniform box
-            # hiding text and it's not a bad redaction.
-            #
-            # This replaces the old ``pixmap.is_unicolor`` check,
-            # which was too strict: some PDFs render solid redaction
-            # bars as two nearly-identical dark colors (e.g.,
-            # RGB(34,31,31) and RGB(35,31,32)), causing PyMuPDF to
-            # consider them non-uniform even though they are visually
-            # indistinguishable.
             continue
-        # The pixmap is (nearly) uniform.  Now check whether that
-        # uniform color is white: a white rectangle on a white page
-        # background means the text is already visually invisible.
-        # These are typically form fields or layout elements, not
-        # intentional redaction attempts, and are a common source of
-        # false positives (see GitHub issue #196).
-        assert dominant is not None  # guaranteed when nearly_uniform is True
-        if all(c == 255 for c in dominant):
-            continue
-        # Check if the dominant color is too bright to be a redaction.
-        # Redactions are meant to hide text, so they're almost always
-        # dark (black, dark gray, dark navy).  Bright colors like teal,
-        # yellow, orange, or green are design elements (sidebars, slide
-        # backgrounds, decorative bars), not redaction attempts.
-        #
-        # We use perceived luminance (ITU-R BT.601) on a 0–255 scale:
-        #   black (0,0,0) → 0,  dark gray (34,31,31) → 32,
-        #   teal (0,173,198) → 124,  yellow (255,255,0) → 227
-        #
-        # A threshold of 100 is generous enough to keep even dark
-        # blue/navy bars while filtering anything clearly colored.
-        r, g, b = dominant[0], dominant[1], dominant[2]
-        luminance = 0.299 * r + 0.587 * g + 0.114 * b
-        if luminance > 100:
+        assert dominant is not None  # guaranteed when nearly_uniform
+        if not _is_dark_color(dominant):
             continue
         bad_redactions.append(redaction)
     return bad_redactions
