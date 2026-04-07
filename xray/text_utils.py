@@ -97,8 +97,14 @@ def check_if_all_dates(redactions: PdfRedactionsDict) -> PdfRedactionsDict:
 def looks_like_a_date(text: str) -> bool:
     """Is the redaction, in its entirety, a date?
 
+    Also handles truncated date fragments like "03/23/" or "03/23/201"
+    that occur when a rectangle boundary clips a date.  Trailing
+    date separators (/ and -) are stripped before checking.
+
     :param text: The text found under the redaction
     :returns True if it's a date, else False
     """
-    text = re.sub(r"[0-3]?\d[/\-][0-3]?\d[/\-]\d{2,4}", "", text)
+    # Strip trailing separators left by clipped dates (e.g., "03/23/")
+    text = text.rstrip("/-")
+    text = re.sub(r"[0-3]?\d[/\-][0-3]?\d([/\-]\d{0,4})?", "", text)
     return len(text) == 0
