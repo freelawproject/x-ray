@@ -508,6 +508,56 @@ def get_unapplied_redact_annotations(page: Page) -> list[RedactionType]:
     return redactions
 
 
+def get_dark_highlight_annotations(page: Page) -> list[RedactionType]:
+    """Find dark Highlight annotations used as makeshift redactions.
+
+    Some documents use black (or very dark) Highlight annotations to
+    obscure text instead of proper redaction tools.  The text remains
+    fully readable and extractable underneath.  We only flag dark
+    highlights — bright-colored highlights (yellow, green, pink) are
+    legitimate markup, not redaction attempts.
+
+    :param page: The PyMuPDF Page to look for annotations within.
+    :returns: A list of RedactionType dicts for each dark highlight
+    annotation that contains text within the visible page area.
+    """
+    redactions = []
+    for annot in page.annots() or []:
+        if annot.type[0] != fitz.PDF_ANNOT_HIGHLIGHT:
+            continue
+
+        # Check if the highlight stroke color is dark.  Highlight
+        # annotations use "stroke" (not "fill") for their color.
+        stroke = annot.colors.get("stroke")
+        if not stroke:
+            continue
+        # Convert from 0–1 float range to 0–255 for _is_dark_color
+        rgb_255 = tuple(int(c * 255) for c in stroke)
+        if not _is_dark_color(rgb_255):
+            continue
+
+        annot_rect = annot.rect
+        if not annot_rect.intersects(page.rect):
+            continue
+
+        visible_rect = annot_rect & page.rect
+        text = page.get_text("text", clip=visible_rect)
+        text = " ".join(text.split())
+        if text:
+            redaction: RedactionType = {
+                "bbox": (
+                    visible_rect.x0,
+                    visible_rect.y0,
+                    visible_rect.x1,
+                    visible_rect.y1,
+                ),
+                "text": text,
+            }
+            redactions.append(redaction)
+
+    return redactions
+
+
 def get_bad_redactions(page: Page) -> list[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
@@ -526,5 +576,10 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     unapplied = get_unapplied_redact_annotations(page)
     unapplied = filter_redactions_by_text(unapplied)
     bad_redactions.extend(unapplied)
+
+    # Also detect dark Highlight annotations used as redactions
+    highlights = get_dark_highlight_annotations(page)
+    highlights = filter_redactions_by_text(highlights)
+    bad_redactions.extend(highlights)
 
     return bad_redactions
