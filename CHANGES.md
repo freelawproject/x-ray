@@ -22,6 +22,7 @@
  - Detect cross-hatched (X-pattern) redactions
  - Fix truncated date fragments (e.g., "03/23/") not being recognized as dates ([issue](https://github.com/freelawproject/x-ray/issues/30))
  - Detect dark images used as redaction overlays
+ - Detect PDF bookmarks/TOC entries that leak redacted heading content ([issue](https://github.com/freelawproject/x-ray/issues/2))
 
 ## Current Version
 
