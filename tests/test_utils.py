@@ -450,6 +450,72 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_toc_leak(self):
+        """Do bookmarks pointing to redacted headings get flagged?
+
+        The test PDF has seven pages, each with a different redaction
+        type and a TOC entry that leaks the redacted name:
+
+        1. Applied redaction (text removed, black bar left)
+        2. Black rectangle over text (bad redaction)
+        3. Dark image over text (bad redaction)
+        4. X-replacement text (XXXXXXXXXX)
+        5. Unapplied Redact annotation
+        6. Dark Highlight annotation
+        7. No redaction (control — should not leak)
+        """
+        path = root_path / "toc_leak.pdf"
+        redactions = xray.inspect(path)
+
+        all_texts = {
+            p: [r["text"] for r in rs] for p, rs in redactions.items()
+        }
+
+        # Page 1: applied redaction — TOC leaks the name
+        self.assertIn("Report by John Smith", all_texts.get(1, []))
+
+        # Page 2: bad redaction — text still extractable
+        self.assertTrue(
+            any("Doe" in t for t in all_texts.get(2, [])),
+        )
+
+        # Page 3: dark image — text still extractable
+        self.assertTrue(
+            any("Jones" in t for t in all_texts.get(3, [])),
+        )
+
+        # Page 4: X-replacement — TOC leaks the name
+        self.assertIn("Letter to Sam Wilson", all_texts.get(4, []))
+
+        # Page 5: unapplied Redact — text still extractable
+        self.assertTrue(
+            any("Carol" in t for t in all_texts.get(5, [])),
+        )
+
+        # Page 6: dark highlight — text still extractable
+        self.assertTrue(
+            any("Foster" in t for t in all_texts.get(6, [])),
+        )
+
+        # Page 7: no redaction — nothing should be detected
+        self.assertEqual(all_texts.get(7, []), [])
+
+    def test_toc_leak_real(self):
+        """Does the JOSH MERRITT declaration leak through the TOC?
+
+        Real-world filing where the name was X'd out on the page and
+        covered by black images, but the PDF bookmark still contains
+        the original "Declaration of JOSH MERRITT." text.
+        """
+        path = root_path / "toc_leak_real.pdf"
+        redactions = xray.inspect(path)
+        all_texts = [r["text"] for rs in redactions.values() for r in rs]
+        self.assertTrue(
+            any("JOSH" in t and "MERRITT" in t for t in all_texts),
+            msg="Expected TOC leak containing 'JOSH MERRITT' "
+            "but it wasn't detected.",
+        )
+
     def test_image_redaction(self):
         """Are dark images used as redaction overlays detected?"""
         path = root_path / "image_redaction.pdf"
