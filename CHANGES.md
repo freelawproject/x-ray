@@ -20,6 +20,7 @@
  - Filter CM/ECF header stamps using font, position, and content matching
  - Detect dark Highlight annotations used as makeshift redactions ([issue](https://github.com/freelawproject/x-ray/issues/185))
  - Detect cross-hatched (X-pattern) redactions
+ - Fix truncated date fragments (e.g., "03/23/") not being recognized as dates ([issue](https://github.com/freelawproject/x-ray/issues/30))
 
 ## Current Version
 
