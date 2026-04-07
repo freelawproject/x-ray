@@ -25,6 +25,7 @@ fitz.TOOLS.set_aa_level(0)
 from xray.pdf_utils import (  # noqa: E402
     _is_nearly_unicolor,
     filter_redactions_by_text,
+    get_content_spans,
     get_good_rectangles,
     get_intersecting_chars,
     get_unapplied_redact_annotations,
@@ -69,7 +70,8 @@ def debug_page(page: fitz.Page, page_num: int) -> None:
     print(f"\n1. Rectangles: {len(rects)}")
 
     # Stage 2: intersecting chars
-    chars = get_intersecting_chars(page, rects)
+    spans = get_content_spans(page)
+    chars = get_intersecting_chars(spans, rects)
     print(f"2. Intersecting chars: {len(chars)}")
 
     # Stage 3: group by rect

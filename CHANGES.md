@@ -17,6 +17,7 @@
  - Filter garbled text from custom font encodings (Unicode replacement characters)
  - Filter bright-colored rectangles (sidebars, slide elements) using luminance check
  - Fix segfault on PDFs that produce zero-height pixmaps from certain clip rectangles
+ - Filter CM/ECF header stamps using font, position, and content matching
 
 ## Current Version
 
