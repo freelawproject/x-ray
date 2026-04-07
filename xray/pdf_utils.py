@@ -558,6 +558,92 @@ def get_dark_highlight_annotations(page: Page) -> list[RedactionType]:
     return redactions
 
 
+def _is_x_hatch_drawing(drawing: dict) -> bool:
+    """Check whether a drawing is an X-hatch (cross-hatch) pattern.
+
+    In the PDF structure, each X is two diagonal lines tiled across
+    the redacted area.  A single drawing contains all the X's as
+    pairs of "l" (line) items.  For example, an X spanning x=100–117
+    would be stored as::
+
+        ("l", Point(100, bottom), Point(117, top))   # ╲ diagonal
+        ("l", Point(100, top),    Point(117, bottom)) # ╱ diagonal
+
+    We identify this pattern by checking that:
+    1. The drawing consists entirely of "l" items (no rects, curves).
+    2. There's an even number of items (they come in pairs).
+    3. Each pair shares the same x-range (both diagonals start and
+       end at the same horizontal positions, within 1pt tolerance
+       for floating-point rounding).
+
+    :param drawing: A drawing dict from ``page.get_drawings()``.
+    :returns: True if the drawing is an X-hatch pattern.
+    """
+    items = drawing["items"]
+
+    # Must have at least one pair, and an even count
+    if len(items) < 2 or len(items) % 2 != 0:
+        return False
+
+    # Every item must be a line — no rectangles, curves, or quads
+    if not all(item[0] == "l" for item in items):
+        return False
+
+    # Each consecutive pair must share the same x-range, meaning
+    # both lines start at the same x and end at the same x.  This
+    # is what makes them cross (╲╱) rather than parallel (╲╲).
+    for i in range(0, len(items), 2):
+        l1_start, l1_end = items[i][1], items[i][2]
+        l2_start, l2_end = items[i + 1][1], items[i + 1][2]
+        if abs(l1_start.x - l2_start.x) > 1:
+            return False
+        if abs(l1_end.x - l2_end.x) > 1:
+            return False
+    return True
+
+
+def get_cross_hatched_redactions(page: Page) -> list[RedactionType]:
+    """Find text hidden under cross-hatched (X-pattern) redactions.
+
+    Some documents use a repeating X pattern drawn over dark
+    rectangles to redact text.  The normal pixmap-based detection
+    can't catch these because the cross-hatching creates two colors
+    in the rendered area (e.g., black at 86% + dark gray at 14%),
+    which fails the ``_is_nearly_unicolor`` check.
+
+    Instead of analyzing pixels, we detect X-hatch patterns directly
+    from the PDF drawing structure using ``_is_x_hatch_drawing``,
+    then extract whatever text sits underneath them.  The results
+    still go through ``filter_redactions_by_text`` in the pipeline
+    to remove false positives like repeated characters.
+
+    :param page: The PyMuPDF Page to inspect.
+    :returns: A list of RedactionType dicts for text under X-hatches.
+    """
+    drawings = page.get_drawings()
+    x_hatches = [d for d in drawings if _is_x_hatch_drawing(d)]
+    if not x_hatches:
+        return []
+
+    redactions = []
+    for xh in x_hatches:
+        # Use the bounding box of the X-hatch drawing to clip text
+        # extraction.  This may include a few characters from
+        # adjacent unredacted text; the text filters downstream
+        # handle that.
+        xh_rect = fitz.Rect(xh["rect"])
+        text = page.get_text("text", clip=xh_rect)
+        text = " ".join(text.split())
+        if text:
+            redaction: RedactionType = {
+                "bbox": (xh_rect.x0, xh_rect.y0, xh_rect.x1, xh_rect.y1),
+                "text": text,
+            }
+            redactions.append(redaction)
+
+    return redactions
+
+
 def get_bad_redactions(page: Page) -> list[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
@@ -581,5 +667,10 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     highlights = get_dark_highlight_annotations(page)
     highlights = filter_redactions_by_text(highlights)
     bad_redactions.extend(highlights)
+
+    # Also detect cross-hatched (X-pattern) redactions
+    cross_hatched = get_cross_hatched_redactions(page)
+    cross_hatched = filter_redactions_by_text(cross_hatched)
+    bad_redactions.extend(cross_hatched)
 
     return bad_redactions

@@ -147,14 +147,16 @@ class OcclusionTest(TestCase):
             )
         self.assertEqual(len(chars), 64)
 
-    def test_cross_hatches_are_ok(self):
+    def test_cross_hatched_redactions(self):
+        """Are cross-hatched (X-pattern) redactions detected?"""
         path = root_path / "bad_cross_hatched_redactions.pdf"
-        with fitz.open(path) as pdf:
-            page = pdf[0]
-            chars = get_intersecting_chars(
-                get_content_spans(page), get_good_rectangles(page)
-            )
-        self.assertEqual(len(chars), 639)
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            len(redactions.get(1, [])),
+            16,
+            msg=f"Expected 16 cross-hatched redactions, "
+            f"got {len(redactions.get(1, []))}.",
+        )
 
     def test_ignoring_partial_occlusions(self):
         path = root_path / "partial_intersections_ok.pdf"
