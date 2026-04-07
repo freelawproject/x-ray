@@ -13,6 +13,7 @@ from fitz import Rect
 import xray
 from xray.pdf_utils import (
     get_bad_redactions,
+    get_content_spans,
     get_good_rectangles,
     get_intersecting_chars,
     intersects,
@@ -141,21 +142,27 @@ class OcclusionTest(TestCase):
         path = root_path / "rectangles_yes.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
-            chars = get_intersecting_chars(page, get_good_rectangles(page))
+            chars = get_intersecting_chars(
+                get_content_spans(page), get_good_rectangles(page)
+            )
         self.assertEqual(len(chars), 64)
 
     def test_cross_hatches_are_ok(self):
         path = root_path / "bad_cross_hatched_redactions.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
-            chars = get_intersecting_chars(page, get_good_rectangles(page))
+            chars = get_intersecting_chars(
+                get_content_spans(page), get_good_rectangles(page)
+            )
         self.assertEqual(len(chars), 639)
 
     def test_ignoring_partial_occlusions(self):
         path = root_path / "partial_intersections_ok.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
-            chars = get_intersecting_chars(page, get_good_rectangles(page))
+            chars = get_intersecting_chars(
+                get_content_spans(page), get_good_rectangles(page)
+            )
         self.assertEqual(len(chars), 0)
 
     @unittest.expectedFailure
@@ -405,6 +412,16 @@ class IntegrationTest(TestCase):
         self.assertTrue(
             redactions,
             msg="Expected bad redactions from short text, but got none.",
+        )
+
+    def test_cmecf_header_stamp_no_results(self):
+        """Are CM/ECF header stamps filtered out?"""
+        path = root_path / "cmecf_header_stamp.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from CM/ECF header stamp, but shouldn't have.",
         )
 
     def test_bright_colored_sidebar_no_results(self):
