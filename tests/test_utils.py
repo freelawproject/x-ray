@@ -450,6 +450,15 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_image_redaction(self):
+        """Are dark images used as redaction overlays detected?"""
+        path = root_path / "image_redaction.pdf"
+        redactions = xray.inspect(path)
+        self.assertTrue(
+            redactions,
+            msg="Expected bad redactions from image overlay, but got none.",
+        )
+
     def test_dark_highlight_annotations(self):
         """Are dark Highlight annotations detected as bad redactions?
 
