@@ -435,6 +435,21 @@ class IntegrationTest(TestCase):
             "but shouldn't have.",
         )
 
+    def test_dark_highlight_annotations(self):
+        """Are dark Highlight annotations detected as bad redactions?
+
+        Some documents use black Highlight annotations to obscure
+        text instead of proper redaction tools.  The text remains
+        fully readable underneath.
+        """
+        path = root_path / "dark_highlight_annotation.pdf"
+        redactions = xray.inspect(path)
+        self.assertTrue(
+            redactions,
+            msg="Expected bad redactions from dark highlight "
+            "annotations, but got none.",
+        )
+
     def test_custom_font_encoding_no_results(self):
         """Is garbled text from custom font encodings ignored?"""
         path = root_path / "custom_font_encoding.pdf"
