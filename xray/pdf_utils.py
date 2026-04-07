@@ -146,15 +146,73 @@ def intersects(
     return percent_occluded > occlusion_threshold
 
 
+# Matches CM/ECF header stamp text.  These vary by court but always
+# contain a document identifier (Doc/Document/DktEntry) and a page
+# indicator.  The regex is intentionally loose on spacing and
+# punctuation to handle the many formatting variations across courts.
+_HEADER_STAMP_RE = re.compile(
+    r"(Doc(ument)?|DktEntry).+Filed.+Page", re.IGNORECASE
+)
+
+
+def _is_header_stamp(span: dict) -> bool:
+    """Check whether a text span is a CM/ECF header stamp.
+
+    Courts add these stamps (case number, doc number, filing date,
+    page number) to every page of a filing.  We require ALL THREE
+    of the following to match, to avoid false filtering:
+
+    1. **Position** — The span must be in the header area (y < 43)
+       or at the very top of the page (y < 20 for the ca5 exception
+       where a different font is used).
+    2. **Font** — LiberationSans is the standard CM/ECF stamp font.
+       At y < 20, any font is accepted (ca5 exception).
+    3. **Content** — The text must match the CM/ECF stamp pattern
+       (contains Doc/Document/DktEntry + Filed + Page).
+
+    :param span: A text trace span dict from ``page.get_texttrace()``.
+    :returns: True if the span looks like a header stamp.
+    """
+    y = span["bbox"][1]
+
+    # Position gate: must be near the top of the page
+    if y >= 43:
+        return False
+
+    # Font gate: require LiberationSans, except at the very top
+    # of the page (y < 20) where ca5 uses a different font.
+    if y >= 20 and "LiberationSans" not in span.get("font", ""):
+        return False
+
+    # Content gate: the text must look like a CM/ECF stamp
+    text = "".join(chr(c[0]) for c in span["chars"])
+    return bool(_HEADER_STAMP_RE.search(text))
+
+
+def get_content_spans(page: Page) -> list[dict]:
+    """Get text spans from a page, excluding court header stamps.
+
+    CM/ECF header stamps (case number, doc number, filing date, page
+    number) appear on every page of a court filing and are a common
+    source of false positives.  This function filters them out before
+    the intersection stage so downstream code doesn't need to know
+    about them.
+
+    :param page: The PyMuPDF.Page object to inspect.
+    :returns: The filtered list of text trace span dicts.
+    """
+    return [s for s in page.get_texttrace() if not _is_header_stamp(s)]
+
+
 def get_intersecting_chars(
-    page: Page, rectangles: list[Rect]
+    spans: list[dict], rectangles: list[Rect]
 ) -> list[CharDictType]:
     """Get the chars that are occluded by the rectangles
 
     We do this in two stages. First, we check for intersecting spans, then we
     check for intersecting chars within those spans. The idea of this is
 
-    :param page: The PyMuPDF.Page object to inspect
+    :param spans: Text trace spans from ``get_content_spans``.
     :param rectangles: A list of PyMuPDF.Rect objects from the page (aka the
     redactions).
     :return A list of characters that are under the rectangles
@@ -162,7 +220,6 @@ def get_intersecting_chars(
     if len(rectangles) == 0:
         return []
 
-    spans = page.get_texttrace()
     intersecting_chars = []
     for span in spans:
         span_seq_no = span["seqno"]
@@ -459,7 +516,8 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     dict that has an origin, bbox, and a character.
     """
     good_rectangles = get_good_rectangles(page)
-    intersecting_chars = get_intersecting_chars(page, good_rectangles)
+    content_spans = get_content_spans(page)
+    intersecting_chars = get_intersecting_chars(content_spans, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
     bad_redactions = filter_redactions_by_text(redactions)
     bad_redactions = filter_redactions_by_pixmap(bad_redactions, page)
