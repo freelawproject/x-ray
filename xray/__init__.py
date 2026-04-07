@@ -10,7 +10,7 @@ import requests
 from fitz import Document
 
 from .custom_types import PdfRedactionsDict
-from .pdf_utils import get_bad_redactions
+from .pdf_utils import get_bad_redactions, get_redaction_bboxes, get_toc_leaks
 from .text_utils import check_if_all_dates
 
 
@@ -35,10 +35,22 @@ def inspect(file: str | bytes | Path) -> PdfRedactionsDict:
         pdf = Document(file)
 
     bad_redactions = {}
+    all_redaction_bboxes: dict[int, list[tuple[float, ...]]] = {}
     for page_number, page in enumerate(pdf, start=1):
+        # Collect redaction-shaped bboxes once per page — reused
+        # for both bad-redaction detection and TOC leak detection.
+        bboxes = get_redaction_bboxes(page)
+        if bboxes:
+            all_redaction_bboxes[page_number] = bboxes
         redactions = get_bad_redactions(page)
         if redactions:
             bad_redactions[page_number] = redactions
+
+    # Check for bookmark/TOC entries that leak redacted content
+    toc_leaks = get_toc_leaks(pdf, all_redaction_bboxes)
+    for page_key, leak_list in toc_leaks.items():
+        bad_redactions.setdefault(page_key, []).extend(leak_list)
+
     pdf.close()
     bad_redactions = check_if_all_dates(bad_redactions)
 
