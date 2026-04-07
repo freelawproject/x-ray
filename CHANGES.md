@@ -19,6 +19,7 @@
  - Fix segfault on PDFs that produce zero-height pixmaps from certain clip rectangles
  - Filter CM/ECF header stamps using font, position, and content matching
  - Detect dark Highlight annotations used as makeshift redactions ([issue](https://github.com/freelawproject/x-ray/issues/185))
+ - Detect cross-hatched (X-pattern) redactions
 
 ## Current Version
 
