@@ -644,6 +644,77 @@ def get_cross_hatched_redactions(page: Page) -> list[RedactionType]:
     return redactions
 
 
+def get_image_redactions(page: Page) -> list[RedactionType]:
+    """Find text hidden under dark images used as redaction overlays.
+
+    Some documents place a solid black (or dark) raster image on top
+    of text instead of using a proper vector rectangle or redaction
+    tool.  The image hides the text visually, but the text layer
+    remains intact and extractable underneath.
+
+    We detect these by examining each image on the page:
+
+    1. Extract the image's raw pixel data via its xref.
+    2. Check if the image is (nearly) unicolor and dark — a solid
+       black JPEG or PNG pasted over text.
+    3. If so, extract any text underneath the image's bounding box.
+
+    Images that are large relative to the page (>50% of page area)
+    are skipped — these are likely full-page scanned backgrounds,
+    not targeted redaction overlays.
+
+    :param page: The PyMuPDF Page to inspect.
+    :returns: A list of RedactionType dicts for text under dark images.
+    """
+    page_area = abs(page.rect)
+    redactions = []
+
+    # get_image_info is much cheaper than get_text("dict") because
+    # it returns only image metadata without parsing all text blocks.
+    # Passing xrefs=True adds the xref ID so we can extract the raw
+    # image pixels without rendering the full page region.
+    for img in page.get_image_info(xrefs=True):
+        bbox = fitz.Rect(img["bbox"])
+
+        # Skip images that cover most of the page — these are
+        # scanned page backgrounds, not redaction overlays.
+        if abs(bbox) > 0.5 * page_area:
+            continue
+
+        # Skip tiny images (likely bullets, icons, etc.)
+        if bbox.width < 10 or bbox.height < 5:
+            continue
+
+        # Extract the raw image by xref and check if it's a solid
+        # dark color.  This avoids rendering the page, which is
+        # the most expensive operation.
+        xref = img.get("xref", 0)
+        if xref == 0:
+            continue
+        pix = fitz.Pixmap(page.parent, xref)
+        if pix.width == 0 or pix.height == 0:
+            continue
+        if not pix.is_unicolor:
+            continue
+        # is_unicolor guarantees all pixels are the same color, so
+        # we only need to check one pixel for darkness.
+        pixel = pix.pixel(0, 0)
+        if not _is_dark_color(tuple(pixel[:3])):
+            continue
+
+        # Dark unicolor image — extract text underneath
+        text = page.get_text("text", clip=bbox)
+        text = " ".join(text.split())
+        if text:
+            redaction: RedactionType = {
+                "bbox": (bbox.x0, bbox.y0, bbox.x1, bbox.y1),
+                "text": text,
+            }
+            redactions.append(redaction)
+
+    return redactions
+
+
 def get_bad_redactions(page: Page) -> list[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
@@ -672,5 +743,10 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     cross_hatched = get_cross_hatched_redactions(page)
     cross_hatched = filter_redactions_by_text(cross_hatched)
     bad_redactions.extend(cross_hatched)
+
+    # Also detect dark images used as redaction overlays
+    image_redactions = get_image_redactions(page)
+    image_redactions = filter_redactions_by_text(image_redactions)
+    bad_redactions.extend(image_redactions)
 
     return bad_redactions
