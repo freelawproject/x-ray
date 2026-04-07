@@ -33,6 +33,9 @@ class TextTest(TestCase):
             "1/1/22",
             "1/1/2022",
             "01-02/2222",  # Fine, whatever
+            "03/23/",  # Truncated at rectangle boundary
+            "03/23",  # No year at all
+            "03/23/201",  # Partial year
         )
         for d in actual_dates:
             with self.subTest(d):
@@ -424,6 +427,16 @@ class IntegrationTest(TestCase):
             redactions,
             {},
             msg="Got redactions from CM/ECF header stamp, but shouldn't have.",
+        )
+
+    def test_date_fragments_no_results(self):
+        """Are truncated date fragments (e.g., '03/23/') filtered?"""
+        path = root_path / "date_fragments.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from date fragments, but shouldn't have.",
         )
 
     def test_bright_colored_sidebar_no_results(self):
