@@ -516,6 +516,21 @@ class IntegrationTest(TestCase):
             "but it wasn't detected.",
         )
 
+    def test_image_behind_text_no_results(self):
+        """Are dark images behind text (not covering it) ignored?
+
+        Some PDFs have dark images in the structure that are drawn
+        behind other elements. The text is fully visible, so these
+        should not be flagged.
+        """
+        path = root_path / "image_behind_text.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from image behind text, but shouldn't have.",
+        )
+
     def test_image_redaction(self):
         """Are dark images used as redaction overlays detected?"""
         path = root_path / "image_redaction.pdf"
