@@ -61,7 +61,8 @@ Once you *do* install x-ray, you can easily use it on the command line. Once ins
         75.65007781982422,
         739.3987426757812
       ],
-      "text": "The Ring travels by way of Cirith Ungol"
+      "text": "The Ring travels by way of Cirith Ungol",
+      "type": "TEXT_UNDER_RECTANGLE"
     }
   ]
 }
@@ -85,11 +86,21 @@ However you run `xray` on the command line, you'll get JSON as output. When you 
  - It's a dict.
  - The keys are page numbers.
  - Each page number maps to a list of dicts.
- - Each of those dicts maps to two keys.
- - The first key is `bbox`. This is a four-tuple that indicates the x,y positions of the upper left corner and then lower right corners of the bad redaction.
- - The second key is `text`. This is the text under the bad rectangle.
+ - Each of those dicts maps to three keys.
+ - `bbox` — A four-tuple with the x,y positions of the upper left and lower right corners of the bad redaction.
+ - `text` — The text under the bad rectangle.
+ - `type` — The type of bad redaction detected. One of the values below.
 
-Simple enough.
+### Detection types
+
+| Type | Description |
+|------|-------------|
+| `TEXT_UNDER_RECTANGLE` | Text hidden under a dark vector rectangle. The classic bad redaction — someone drew a black box on top of text without removing it from the PDF. |
+| `UNAPPLIED_REDACT_ANNOTATION` | A PDF Redact annotation was added but never applied. The annotation marks text for redaction but the text is still visible and extractable. |
+| `DARK_HIGHLIGHT_ANNOTATION` | A dark (usually black) Highlight annotation covers text. Highlights are meant for markup, not redaction — the text remains fully readable. |
+| `CROSS_HATCHED_PATTERN` | Text hidden under a cross-hatched (X-pattern) overlay. These repeating diagonal line patterns are drawn over dark rectangles as a visual redaction style. |
+| `TEXT_UNDER_IMAGE` | Text hidden under a dark raster image. Instead of using a vector rectangle, someone pasted a solid black image on top of the text. |
+| `TOC_BOOKMARK_LEAK` | A PDF bookmark/TOC entry reveals text that was redacted on the page. The heading was properly redacted but the bookmark still contains the original text. |
 
 You can also use it as a Python module, if you prefer the long-form:
 
@@ -147,21 +158,28 @@ find out.
 
 Under the covers, `xray` uses the high-performant [PyMuPDF project][mu] to parse PDFs. It has been a wonderful project to work with.
 
-You can read the source to see how it works, but the general idea is to:
+You can read the source to see how it works, but the general idea is:
 
-1. Find rectangles in a PDF.
+1. **Rectangles** — Find dark vector rectangles (including rounded ones drawn
+   with curves), check if there's extractable text underneath, and render the
+   area as a pixmap to confirm the text is actually hidden.
 
-2. Find letters in the same location
+2. **Annotations** — Detect unapplied Redact annotations (marked but never
+   applied) and dark Highlight annotations used as makeshift redactions.
 
-3. Render the rectangle as an image
+3. **Patterns** — Detect cross-hatched (X-pattern) overlays by examining the
+   PDF drawing structure for repeating diagonal line pairs.
 
-4. Inspect the rectangle to see if it's all one color. If it is, then that's a
-   bad redaction. If not, then we assume you can see a mix of text and
-   drawings, indicating a redaction that's OK.
+4. **Images** — Detect solid dark raster images placed over text by rendering
+   the page at each image location to confirm the area is dark.
 
-5. Filter out common false positives: single characters, repeated characters
-   (like "XXXX"), whitespace, known boilerplate words (like "REDACTED"),
-   and white-on-white rectangles.
+5. **TOC leaks** — Check PDF bookmarks for entries that reveal text redacted on
+   the referenced page.
+
+6. **False positive filtering** — Filter out single characters, repeated
+   characters (like "XXXX"), whitespace, known boilerplate words (like
+   "REDACTED"), white-on-white rectangles, bright-colored design elements,
+   CM/ECF court header stamps, and garbled text from custom font encodings.
 
 The PDF format is a big and complicated one, so it's difficult to do all this perfectly. We do our best, but there's always more to do to make it better. [Donations][d] and sponsored work help.
 
