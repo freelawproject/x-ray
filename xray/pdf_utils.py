@@ -702,7 +702,22 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
         if not _is_dark_color(tuple(pixel[:3])):
             continue
 
-        # Dark unicolor image — extract text underneath
+        # The raw image is dark, but is it actually on top of the
+        # text?  Some PDFs have dark images drawn *behind* other
+        # elements (form backgrounds, template layers).  Render the
+        # page at this location — if the result isn't dark, the
+        # image isn't covering anything visible.
+        page_pix = page.get_pixmap(colorspace=fitz.csRGB, clip=bbox)
+        if page_pix.width == 0 or page_pix.height == 0:
+            continue
+        rendered_uniform, rendered_color = _is_nearly_unicolor(page_pix)
+        if not rendered_uniform:
+            continue
+        assert rendered_color is not None
+        if not _is_dark_color(rendered_color):
+            continue
+
+        # Dark unicolor image that renders dark — extract text
         text = page.get_text("text", clip=bbox)
         text = " ".join(text.split())
         if text:
