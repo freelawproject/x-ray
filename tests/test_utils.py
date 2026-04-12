@@ -3,6 +3,7 @@ X-Ray Tests
 """
 
 import os
+import time
 import unittest
 from pathlib import Path
 from unittest import TestCase
@@ -214,7 +215,7 @@ class OcclusionTest(TestCase):
             with self.subTest(f"{path=}"):
                 with fitz.open(path) as pdf:
                     page = pdf[0]
-                    chars = get_bad_redactions(page)
+                    chars, _ = get_bad_redactions(page)
                 self.assertEqual(
                     len(chars),
                     0,
@@ -252,7 +253,7 @@ class IntegrationTest(TestCase):
     def test_bad_redactions_on_single_page(self):
         with fitz.open(self.path) as pdf:
             page = pdf[0]
-            bad_redactions = get_bad_redactions(page)
+            bad_redactions, _ = get_bad_redactions(page)
         expected_bad_redaction_count = 3
         actual_bad_redaction_count = len(bad_redactions)
         self.assertEqual(
@@ -452,6 +453,23 @@ class IntegrationTest(TestCase):
             {},
             msg="Got redactions from bright-colored sidebar, "
             "but shouldn't have.",
+        )
+
+    def test_many_images_performance(self):
+        """Does a PDF with many images complete in reasonable CPU time?
+
+        Uses process_time() for CPU-only measurement, which is not
+        affected by system load.
+        """
+        path = root_path / "many_images_no_redactions.pdf"
+        t0 = time.process_time()
+        redactions = xray.inspect(path)
+        cpu = time.process_time() - t0
+        self.assertEqual(redactions, {})
+        self.assertLess(
+            cpu,
+            3,
+            msg=f"Took {cpu:.1f}s CPU (expected <3s).",
         )
 
     def test_image_behind_text_no_results(self):
