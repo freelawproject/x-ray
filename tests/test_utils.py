@@ -152,6 +152,21 @@ class OcclusionTest(TestCase):
             )
         self.assertEqual(len(chars), 64)
 
+    def test_thin_margin_lines_not_cross_hatches(self):
+        """Are thin vertical margin lines ignored by cross-hatch detection?
+
+        Some PDFs have thin line pairs at the page margin that pass
+        the X-hatch line-pair check but are only ~0.75pt wide.
+        These should not be treated as cross-hatched redactions.
+        """
+        path = root_path / "thin_margin_lines.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from thin margin lines, but shouldn't have.",
+        )
+
     def test_cross_hatched_redactions(self):
         """Are cross-hatched (X-pattern) redactions detected?"""
         path = root_path / "bad_cross_hatched_redactions.pdf"
