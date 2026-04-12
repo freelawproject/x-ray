@@ -11,6 +11,7 @@ import fitz
 from fitz import Rect
 
 import xray
+from xray.custom_types import BadRedactionType
 from xray.pdf_utils import (
     get_bad_redactions,
     get_content_spans,
@@ -265,6 +266,9 @@ class IntegrationTest(TestCase):
     def test_inspect_method_on_a_filepath(self):
         redactions = xray.inspect(self.path)
         self.assertEqual(len(redactions[1]), 3)
+        # All redactions in this file are text under rectangles
+        for r in redactions[1]:
+            self.assertEqual(r["type"], BadRedactionType.TEXT_UNDER_RECTANGLE)
 
     def test_tricky_rectangles(self):
         """Check that tricky PDFs don't create false positives.
@@ -488,6 +492,12 @@ class IntegrationTest(TestCase):
 
         # Page 1: applied redaction — TOC leaks the name
         self.assertIn("Report by John Smith", all_texts.get(1, []))
+        toc_leak = [
+            r
+            for r in redactions.get(1, [])
+            if r["text"] == "Report by John Smith"
+        ][0]
+        self.assertEqual(toc_leak["type"], BadRedactionType.TOC_BOOKMARK_LEAK)
 
         # Page 2: bad redaction — text still extractable
         self.assertTrue(
