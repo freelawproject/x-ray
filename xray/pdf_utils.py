@@ -8,7 +8,12 @@ import typing
 import fitz
 from fitz import Page, Rect
 
-from .custom_types import CharDictType, PdfRedactionsDict, RedactionType
+from .custom_types import (
+    BadRedactionType,
+    CharDictType,
+    PdfRedactionsDict,
+    RedactionType,
+)
 from .text_utils import is_ok_words, is_repeated_chars, is_single_char
 
 # Disable anti-aliasing when rendering and creating pixmaps
@@ -282,6 +287,7 @@ def group_chars_by_rect(
         redaction: RedactionType = {
             "bbox": (rect.x0, rect.y0, rect.x1, rect.y1),
             "text": "",
+            "type": BadRedactionType.TEXT_UNDER_RECTANGLE,
         }
         # Make a copy of the chars list so we can manipulate it in the loop
         char_copy = chars.copy()
@@ -502,6 +508,7 @@ def get_unapplied_redact_annotations(page: Page) -> list[RedactionType]:
                     visible_rect.y1,
                 ),
                 "text": text,
+                "type": BadRedactionType.UNAPPLIED_REDACT_ANNOTATION,
             }
             redactions.append(redaction)
 
@@ -552,6 +559,7 @@ def get_dark_highlight_annotations(page: Page) -> list[RedactionType]:
                     visible_rect.y1,
                 ),
                 "text": text,
+                "type": BadRedactionType.DARK_HIGHLIGHT_ANNOTATION,
             }
             redactions.append(redaction)
 
@@ -638,6 +646,7 @@ def get_cross_hatched_redactions(page: Page) -> list[RedactionType]:
             redaction: RedactionType = {
                 "bbox": (xh_rect.x0, xh_rect.y0, xh_rect.x1, xh_rect.y1),
                 "text": text,
+                "type": BadRedactionType.CROSS_HATCHED_PATTERN,
             }
             redactions.append(redaction)
 
@@ -709,6 +718,7 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
             redaction: RedactionType = {
                 "bbox": (bbox.x0, bbox.y0, bbox.x1, bbox.y1),
                 "text": text,
+                "type": BadRedactionType.TEXT_UNDER_IMAGE,
             }
             redactions.append(redaction)
 
@@ -891,6 +901,7 @@ def get_toc_leaks(
         leak: RedactionType = {
             "bbox": (target.x, target.y, target.x, target.y),
             "text": title,
+            "type": BadRedactionType.TOC_BOOKMARK_LEAK,
         }
         redactions.setdefault(page_key, []).append(leak)
 
