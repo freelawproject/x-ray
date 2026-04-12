@@ -654,10 +654,13 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
 
     We detect these by examining each image on the page:
 
-    1. Extract the image's raw pixel data via its xref.
-    2. Check if the image is (nearly) unicolor and dark — a solid
-       black JPEG or PNG pasted over text.
-    3. If so, extract any text underneath the image's bounding box.
+    1. Render the page at the image's bounding box.
+    2. Check if the rendered area is (nearly) unicolor and dark.
+       This is the ground truth of what the viewer sees — it also
+       correctly ignores dark images drawn *behind* other elements
+       (form backgrounds, template layers) where the text is still
+       visible on the rendered page.
+    3. If the rendered area is dark, extract any text underneath.
 
     Images that are large relative to the page (>50% of page area)
     are skipped — these are likely full-page scanned backgrounds,
@@ -671,9 +674,7 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
 
     # get_image_info is much cheaper than get_text("dict") because
     # it returns only image metadata without parsing all text blocks.
-    # Passing xrefs=True adds the xref ID so we can extract the raw
-    # image pixels without rendering the full page region.
-    for img in page.get_image_info(xrefs=True):
+    for img in page.get_image_info():
         bbox = fitz.Rect(img["bbox"])
 
         # Skip images that cover most of the page — these are
@@ -685,24 +686,23 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
         if bbox.width < 10 or bbox.height < 5:
             continue
 
-        # Extract the raw image by xref and check if it's a solid
-        # dark color.  This avoids rendering the page, which is
-        # the most expensive operation.
-        xref = img.get("xref", 0)
-        if xref == 0:
+        # Render the page at this location and check if the result
+        # is a dark, uniform area.  This is the ground truth of what
+        # the viewer sees — it catches both:
+        # - Dark images on top of text (bad redaction)
+        # - Dark images behind other elements (not a redaction,
+        #   because the rendered page shows the content on top)
+        page_pix = page.get_pixmap(colorspace=fitz.csRGB, clip=bbox)
+        if page_pix.width == 0 or page_pix.height == 0:
             continue
-        pix = fitz.Pixmap(page.parent, xref)
-        if pix.width == 0 or pix.height == 0:
+        nearly_uniform, dominant = _is_nearly_unicolor(page_pix)
+        if not nearly_uniform:
             continue
-        if not pix.is_unicolor:
-            continue
-        # is_unicolor guarantees all pixels are the same color, so
-        # we only need to check one pixel for darkness.
-        pixel = pix.pixel(0, 0)
-        if not _is_dark_color(tuple(pixel[:3])):
+        assert dominant is not None
+        if not _is_dark_color(dominant):
             continue
 
-        # Dark unicolor image — extract text underneath
+        # Dark unicolor rendered area — extract text underneath
         text = page.get_text("text", clip=bbox)
         text = " ".join(text.split())
         if text:

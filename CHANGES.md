@@ -21,7 +21,7 @@
  - Detect dark Highlight annotations used as makeshift redactions ([issue](https://github.com/freelawproject/x-ray/issues/185))
  - Detect cross-hatched (X-pattern) redactions
  - Fix truncated date fragments (e.g., "03/23/") not being recognized as dates ([issue](https://github.com/freelawproject/x-ray/issues/30))
- - Detect dark images used as redaction overlays
+ - Detect dark images used as redaction overlays (ignores images drawn behind text)
 
 ## Current Version
 
