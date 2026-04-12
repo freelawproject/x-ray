@@ -695,6 +695,13 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
         if bbox.width < 10 or bbox.height < 5:
             continue
 
+        # Check for text first — this is cheap compared to pixmap
+        # rendering, and most images don't cover any text at all.
+        text = page.get_text("text", clip=bbox)
+        text = " ".join(text.split())
+        if not text:
+            continue
+
         # Render the page at this location and check if the result
         # is a dark, uniform area.  This is the ground truth of what
         # the viewer sees — it catches both:
@@ -711,80 +718,34 @@ def get_image_redactions(page: Page) -> list[RedactionType]:
         if not _is_dark_color(dominant):
             continue
 
-        # Dark unicolor rendered area — extract text underneath
-        text = page.get_text("text", clip=bbox)
-        text = " ".join(text.split())
-        if text:
-            redaction: RedactionType = {
-                "bbox": (bbox.x0, bbox.y0, bbox.x1, bbox.y1),
-                "text": text,
-                "type": BadRedactionType.TEXT_UNDER_IMAGE,
-            }
-            redactions.append(redaction)
+        redaction: RedactionType = {
+            "bbox": (bbox.x0, bbox.y0, bbox.x1, bbox.y1),
+            "text": text,
+            "type": BadRedactionType.TEXT_UNDER_IMAGE,
+        }
+        redactions.append(redaction)
 
     return redactions
 
 
-def get_redaction_bboxes(page: Page) -> list[tuple[float, ...]]:
-    """Collect bounding boxes of all redaction-shaped objects on a page.
-
-    This gathers the locations of everything that *looks* like a
-    redaction: dark rectangles, dark images, dark highlight annotations,
-    cross-hatch patterns, and unapplied Redact annotations.  The result
-    is used both for bad-redaction detection (is there text underneath?)
-    and for TOC leak detection (does a bookmark point here?).
-
-    Collecting these once avoids repeating expensive operations like
-    drawing extraction, image inspection, and pixmap rendering.
-
-    :param page: The PyMuPDF.Page to inspect.
-    :returns: A list of (x0, y0, x1, y1) bounding box tuples.
-    """
-    bboxes: list[tuple[float, ...]] = []
-
-    # Dark filled rectangles (vector drawings)
-    for rect in get_good_rectangles(page):
-        bboxes.append((rect.x0, rect.y0, rect.x1, rect.y1))
-
-    # Unapplied Redact annotations
-    for r in get_unapplied_redact_annotations(page):
-        bboxes.append(r["bbox"])
-
-    # Dark Highlight annotations
-    for r in get_dark_highlight_annotations(page):
-        bboxes.append(r["bbox"])
-
-    # Cross-hatched (X-pattern) drawings
-    for r in get_cross_hatched_redactions(page):
-        bboxes.append(r["bbox"])
-
-    # Dark images used as overlays
-    for r in get_image_redactions(page):
-        bboxes.append(r["bbox"])
-
-    # X-replacement text (e.g., "XXXXXXXXX").  These aren't visual
-    # objects like rectangles or images, but they indicate that
-    # someone replaced a name/word with X's.  We find their bboxes
-    # via text search so TOC leak detection can match against them.
-    for block in page.get_text("dict")["blocks"]:
-        if block["type"] != 0:  # text block
-            continue
-        for line in block["lines"]:
-            for span in line["spans"]:
-                if re.search(r"X{3,}", span["text"], re.IGNORECASE):
-                    bboxes.append(tuple(span["bbox"]))
-
-    return bboxes
-
-
-def get_bad_redactions(page: Page) -> list[RedactionType]:
+def get_bad_redactions(
+    page: Page,
+) -> tuple[list[RedactionType], list[tuple[float, ...]]]:
     """Get the bad redactions for a page from a PDF.
 
+    Also returns the bounding boxes of all redaction-shaped objects
+    found during detection.  These are reused by ``get_toc_leaks``
+    for bookmark matching, avoiding duplicate work.
+
     :param page: The PyMuPDF.Page from a PDF.
-    :returns: A list of redaction dicts with bbox and text keys.
+    :returns: A tuple of (bad_redactions, redaction_bboxes).
     """
+    redaction_bboxes: list[tuple[float, ...]] = []
+
     # --- Rectangle-based detection (text under dark bars) ---
     good_rectangles = get_good_rectangles(page)
+    for rect in good_rectangles:
+        redaction_bboxes.append((rect.x0, rect.y0, rect.x1, rect.y1))
     content_spans = get_content_spans(page)
     intersecting_chars = get_intersecting_chars(content_spans, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
@@ -793,24 +754,32 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
 
     # --- Annotation-based detection ---
     unapplied = get_unapplied_redact_annotations(page)
+    for r in unapplied:
+        redaction_bboxes.append(r["bbox"])
     unapplied = filter_redactions_by_text(unapplied)
     bad_redactions.extend(unapplied)
 
     highlights = get_dark_highlight_annotations(page)
+    for r in highlights:
+        redaction_bboxes.append(r["bbox"])
     highlights = filter_redactions_by_text(highlights)
     bad_redactions.extend(highlights)
 
     # --- Pattern-based detection ---
     cross_hatched = get_cross_hatched_redactions(page)
+    for r in cross_hatched:
+        redaction_bboxes.append(r["bbox"])
     cross_hatched = filter_redactions_by_text(cross_hatched)
     bad_redactions.extend(cross_hatched)
 
     # --- Image-based detection ---
     image_redactions = get_image_redactions(page)
+    for r in image_redactions:
+        redaction_bboxes.append(r["bbox"])
     image_redactions = filter_redactions_by_text(image_redactions)
     bad_redactions.extend(image_redactions)
 
-    return bad_redactions
+    return bad_redactions, redaction_bboxes
 
 
 def get_toc_leaks(
@@ -876,7 +845,21 @@ def get_toc_leaks(
         # spatial guard, normal bookmarks referencing slides or
         # images produce false positives.
         y_tolerance = 20  # points
-        page_bboxes = redaction_bboxes_by_page.get(page_key, [])
+        page_bboxes = list(redaction_bboxes_by_page.get(page_key, []))
+
+        # Also check for X-replacement text on this page.  This is
+        # done here (not in get_bad_redactions) because
+        # page.get_text("dict") is expensive and only needed for
+        # pages that TOC entries actually point to.
+        page = doc[page_idx]
+        for block in page.get_text("dict")["blocks"]:
+            if block["type"] != 0:
+                continue
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    if re.search(r"X{3,}", span["text"], re.IGNORECASE):
+                        page_bboxes.append(tuple(span["bbox"]))
+
         has_redaction_at_heading = any(
             bbox[1] - y_tolerance <= bookmark_y <= bbox[3] + y_tolerance
             for bbox in page_bboxes
@@ -888,7 +871,6 @@ def get_toc_leaks(
         # the page.  Any word present in the bookmark but absent
         # from the page text was likely redacted — and the bookmark
         # is leaking it.
-        page = doc[page_idx]
         page_text = page.get_text("text")
         leaked_words = [
             w
