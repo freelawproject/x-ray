@@ -644,6 +644,77 @@ def get_cross_hatched_redactions(page: Page) -> list[RedactionType]:
     return redactions
 
 
+def get_image_redactions(page: Page) -> list[RedactionType]:
+    """Find text hidden under dark images used as redaction overlays.
+
+    Some documents place a solid black (or dark) raster image on top
+    of text instead of using a proper vector rectangle or redaction
+    tool.  The image hides the text visually, but the text layer
+    remains intact and extractable underneath.
+
+    We detect these by examining each image on the page:
+
+    1. Render the page at the image's bounding box.
+    2. Check if the rendered area is (nearly) unicolor and dark.
+       This is the ground truth of what the viewer sees — it also
+       correctly ignores dark images drawn *behind* other elements
+       (form backgrounds, template layers) where the text is still
+       visible on the rendered page.
+    3. If the rendered area is dark, extract any text underneath.
+
+    Images that are large relative to the page (>50% of page area)
+    are skipped — these are likely full-page scanned backgrounds,
+    not targeted redaction overlays.
+
+    :param page: The PyMuPDF Page to inspect.
+    :returns: A list of RedactionType dicts for text under dark images.
+    """
+    page_area = abs(page.rect)
+    redactions = []
+
+    # get_image_info is much cheaper than get_text("dict") because
+    # it returns only image metadata without parsing all text blocks.
+    for img in page.get_image_info():
+        bbox = fitz.Rect(img["bbox"])
+
+        # Skip images that cover most of the page — these are
+        # scanned page backgrounds, not redaction overlays.
+        if abs(bbox) > 0.5 * page_area:
+            continue
+
+        # Skip tiny images (likely bullets, icons, etc.)
+        if bbox.width < 10 or bbox.height < 5:
+            continue
+
+        # Render the page at this location and check if the result
+        # is a dark, uniform area.  This is the ground truth of what
+        # the viewer sees — it catches both:
+        # - Dark images on top of text (bad redaction)
+        # - Dark images behind other elements (not a redaction,
+        #   because the rendered page shows the content on top)
+        page_pix = page.get_pixmap(colorspace=fitz.csRGB, clip=bbox)
+        if page_pix.width == 0 or page_pix.height == 0:
+            continue
+        nearly_uniform, dominant = _is_nearly_unicolor(page_pix)
+        if not nearly_uniform:
+            continue
+        assert dominant is not None
+        if not _is_dark_color(dominant):
+            continue
+
+        # Dark unicolor rendered area — extract text underneath
+        text = page.get_text("text", clip=bbox)
+        text = " ".join(text.split())
+        if text:
+            redaction: RedactionType = {
+                "bbox": (bbox.x0, bbox.y0, bbox.x1, bbox.y1),
+                "text": text,
+            }
+            redactions.append(redaction)
+
+    return redactions
+
+
 def get_bad_redactions(page: Page) -> list[RedactionType]:
     """Get the bad redactions for a page from a PDF
 
@@ -672,5 +743,10 @@ def get_bad_redactions(page: Page) -> list[RedactionType]:
     cross_hatched = get_cross_hatched_redactions(page)
     cross_hatched = filter_redactions_by_text(cross_hatched)
     bad_redactions.extend(cross_hatched)
+
+    # Also detect dark images used as redaction overlays
+    image_redactions = get_image_redactions(page)
+    image_redactions = filter_redactions_by_text(image_redactions)
+    bad_redactions.extend(image_redactions)
 
     return bad_redactions
