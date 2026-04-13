@@ -334,6 +334,14 @@ def filter_redactions_by_text(
     # content, so it's not a meaningful redaction.
     redactions = filter(lambda r: "\ufffd" not in r["text"], redactions)
 
+    # Doesn't contain non-whitespace control characters (< 0x20).
+    # Real text never contains these — they indicate garbled font
+    # encoding that happened to avoid U+FFFD.
+    redactions = filter(
+        lambda r: not any(c < " " and c not in "\t\n\r" for c in r["text"]),
+        redactions,
+    )
+
     return list(redactions)
 
 
@@ -587,6 +595,13 @@ def _is_x_hatch_drawing(drawing: dict) -> bool:
     :param drawing: A drawing dict from ``page.get_drawings()``.
     :returns: True if the drawing is an X-hatch pattern.
     """
+    # The drawing's bounding box must be wide enough to be a
+    # redaction.  Thin vertical lines at page margins (< 4pt wide)
+    # can pass the line-pair check but aren't cross-hatching.
+    rect = fitz.Rect(drawing["rect"])
+    if rect.width < 4 or rect.height < 4:
+        return False
+
     items = drawing["items"]
 
     # Must have at least one pair, and an even count
