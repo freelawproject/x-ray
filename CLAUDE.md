@@ -17,7 +17,8 @@ tools/                  # Developer utilities for investigating PDFs
 ├── layout-analyzer.py  # Visualize page layout (text blocks, images, CropBox)
 ├── quick-inspect.py    # Run xray.inspect() and print results
 ├── inspect-pdf.py      # Dump redaction-relevant PDF structure (drawings, colors, annotations)
-└── debug-pipeline.py   # Step through x-ray's detection pipeline showing kept/dropped at each stage
+├── debug-pipeline.py   # Step through x-ray's detection pipeline showing kept/dropped at each stage
+└── trim-pdf.py         # Extract pages from a PDF with compression (for creating test assets)
 ```
 
 ## Debugging Tools
@@ -38,6 +39,16 @@ When investigating a PDF, use the tools in `tools/` before writing ad-hoc script
 `inspect-pdf.py` shows the raw PDF structure: fill colors, drawing types (`re` vs lines+curves), annotations, and text spans. Use it first to understand what's in the PDF.
 
 `debug-pipeline.py` runs the actual x-ray detection pipeline step by step, showing counts at each stage and color analysis for pixmap-filtered entries. Use it to pinpoint exactly where detection fails.
+
+`trim-pdf.py` extracts specific pages from a PDF with compression. Use it to create test assets from large PDFs that would exceed the 5MB pre-commit file size limit:
+
+```bash
+# Extract pages 19 and 28 (0-indexed)
+.venv/bin/python tools/trim-pdf.py large.pdf tests/assets/small.pdf --pages 19,28
+
+# Extract a range
+.venv/bin/python tools/trim-pdf.py large.pdf tests/assets/small.pdf --pages 0-4
+```
 
 ## Running Tests
 

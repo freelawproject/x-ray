@@ -16,7 +16,7 @@ Ask the user for the following (skip anything they already provided):
 
 ## Step 2: Download the PDF
 
-Save it to `tests/assets/<name>.pdf` using curl.
+Save it to `tests/assets/<name>.pdf` using curl. If the file exceeds 5MB (pre-commit will reject it), use `tools/trim-pdf.py` to extract only the relevant pages.
 
 ## Step 3: Analyze the PDF
 
