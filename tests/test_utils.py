@@ -517,6 +517,24 @@ class IntegrationTest(TestCase):
             msg="Got redactions from image behind text, but shouldn't have.",
         )
 
+    def test_highlight_annotations_toc_no_results(self):
+        """Are colored highlight annotations ignored by TOC leak detection?
+
+        Academic papers with colored highlights over text have TOC
+        entries that don't match the page text. The highlights pass
+        get_good_rectangles but fail the pixmap filter (they're
+        colorful, not dark). Their bboxes should not pollute the
+        TOC leak matcher.
+        """
+        path = root_path / "highlight_annotations_toc.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got false TOC leaks from colored highlights, "
+            "but shouldn't have.",
+        )
+
     def test_toc_leak(self):
         """Do bookmarks pointing to redacted headings get flagged?
 

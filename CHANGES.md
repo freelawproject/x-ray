@@ -24,6 +24,7 @@
  - Detect dark images used as redaction overlays (ignores images drawn behind text)
  - Detect PDF bookmarks/TOC entries that leak redacted heading content ([issue](https://github.com/freelawproject/x-ray/issues/2))
  - Add `type` field to redaction output with `BadRedactionType` enum
+ - Fix false TOC leak detections from colored highlight annotations
 
 ## Current Version
 
