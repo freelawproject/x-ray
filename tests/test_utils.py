@@ -152,6 +152,50 @@ class OcclusionTest(TestCase):
             )
         self.assertEqual(len(chars), 64)
 
+    def test_small_crosshatch_decorations_no_results(self):
+        """Are small decorative cross-hatch patterns ignored?
+
+        Some PDFs have tiny (5x7pt) cross-hatch patterns that are
+        character-sized decorations, not redaction bars.
+        """
+        path = root_path / "small_crosshatch_decorations.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from small decorative patterns, "
+            "but shouldn't have.",
+        )
+
+    def test_map_hatching_not_cross_hatches(self):
+        """Are map/chart hatching patterns ignored?
+
+        Maps use colored or dense line patterns to indicate regions.
+        These should not be mistaken for redaction cross-hatching.
+        """
+        path = root_path / "map_hatching.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from map hatching, but shouldn't have.",
+        )
+
+    def test_word_internal_bookmarks_no_results(self):
+        """Are Word internal bookmarks (_Hlk, _Ref, etc.) ignored?
+
+        Bookmarks starting with underscore are document structure
+        artifacts, not real headings.
+        """
+        path = root_path / "word_internal_bookmarks.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from Word internal bookmarks, "
+            "but shouldn't have.",
+        )
+
     def test_low_occlusion_redaction(self):
         """Are redaction bars slightly shorter than text still detected?
 

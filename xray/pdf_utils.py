@@ -624,14 +624,31 @@ def _is_x_hatch_drawing(drawing: dict) -> bool:
     :param drawing: A drawing dict from ``page.get_drawings()``.
     :returns: True if the drawing is an X-hatch pattern.
     """
-    # The drawing's bounding box must be wide enough to be a
-    # redaction.  Thin vertical lines at page margins (< 4pt wide)
-    # can pass the line-pair check but aren't cross-hatching.
+    # The drawing's bounding box must be large enough to be a
+    # redaction.  Small patterns (< 6pt in either dimension) are
+    # decorative elements or character-sized marks, not redaction
+    # bars.
     rect = fitz.Rect(drawing["rect"])
-    if rect.width < 4 or rect.height < 4:
+    if rect.width < 6 or rect.height < 6:
         return False
 
+    # The line color must be dark.  Map/chart hatching uses colored
+    # lines (salmon, blue, gray) to indicate regions.  Redaction
+    # cross-hatching uses dark/black lines.
+    color = drawing.get("color")
+    if color is not None:
+        rgb_255 = tuple(int(c * 255) for c in color)
+        if not _is_dark_color(rgb_255):
+            return False
+
     items = drawing["items"]
+
+    # Redaction cross-hatching has ~1 X per 17pt, so a handful of
+    # line pairs per rectangle.  Map/chart hatching packs hundreds
+    # of lines into a small area.  Cap at 100 lines to filter dense
+    # fill patterns.
+    if len(items) > 100:
+        return False
 
     # Must have at least one pair, and an even count
     if len(items) < 2 or len(items) % 2 != 0:
@@ -874,6 +891,13 @@ def get_toc_leaks(
     redactions: dict[int, list[RedactionType]] = {}
     for _level, title, _page_num_1based, dest in toc:
         if not dest or "page" not in dest:
+            continue
+
+        # Skip internal bookmarks.  Titles starting with an
+        # underscore are document structure artifacts from Word
+        # and other editors (_Hlk, _Ref, _Toc, _GoBack, etc.),
+        # not real headings.
+        if title.startswith("_"):
             continue
 
         # page can be an int or a string depending on the PDF
