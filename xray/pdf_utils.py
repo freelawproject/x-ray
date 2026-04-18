@@ -624,11 +624,12 @@ def _is_x_hatch_drawing(drawing: dict) -> bool:
     :param drawing: A drawing dict from ``page.get_drawings()``.
     :returns: True if the drawing is an X-hatch pattern.
     """
-    # The drawing's bounding box must be wide enough to be a
-    # redaction.  Thin vertical lines at page margins (< 4pt wide)
-    # can pass the line-pair check but aren't cross-hatching.
+    # The drawing's bounding box must be large enough to be a
+    # redaction.  Small patterns (< 6pt in either dimension) are
+    # decorative elements or character-sized marks, not redaction
+    # bars.
     rect = fitz.Rect(drawing["rect"])
-    if rect.width < 4 or rect.height < 4:
+    if rect.width < 6 or rect.height < 6:
         return False
 
     # The line color must be dark.  Map/chart hatching uses colored

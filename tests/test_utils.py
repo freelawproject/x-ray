@@ -152,6 +152,21 @@ class OcclusionTest(TestCase):
             )
         self.assertEqual(len(chars), 64)
 
+    def test_small_crosshatch_decorations_no_results(self):
+        """Are small decorative cross-hatch patterns ignored?
+
+        Some PDFs have tiny (5x7pt) cross-hatch patterns that are
+        character-sized decorations, not redaction bars.
+        """
+        path = root_path / "small_crosshatch_decorations.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from small decorative patterns, "
+            "but shouldn't have.",
+        )
+
     def test_map_hatching_not_cross_hatches(self):
         """Are map/chart hatching patterns ignored?
 
