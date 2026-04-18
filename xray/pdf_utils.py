@@ -442,6 +442,30 @@ def _is_dark_color(
     return luminance <= luminance_threshold
 
 
+def filter_redactions_by_pii(
+    redactions: list[RedactionType],
+    page: Page,
+) -> list[RedactionType]:
+    """Split PII from non-PII redactions and filter appropriately.
+
+    Redactions containing PII patterns (e.g., SSNs) skip the pixmap
+    filter.  White rectangles hiding PII render as non-unicolor in
+    the pixmap due to form grid lines, but the text is still
+    extractable and should always be flagged.
+
+    Non-PII redactions go through the normal pixmap filter.
+
+    :param redactions: Text-filtered redaction candidates.
+    :param page: The PyMuPDF.Page for pixmap rendering.
+    :returns: Bad redactions (PII + pixmap-verified non-PII).
+    """
+    pii = [r for r in redactions if contains_pii(r["text"])]
+    non_pii = [r for r in redactions if not contains_pii(r["text"])]
+    result = filter_redactions_by_pixmap(non_pii, page)
+    result.extend(pii)
+    return result
+
+
 def filter_redactions_by_pixmap(
     redactions: list[RedactionType],
     page: Page,
@@ -770,14 +794,7 @@ def get_bad_redactions(
     intersecting_chars = get_intersecting_chars(content_spans, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
     text_filtered = filter_redactions_by_text(redactions)
-    # Redactions containing PII (e.g., SSNs) skip the pixmap filter.
-    # White rectangles hiding SSNs render as white in the pixmap
-    # (due to form grid lines preventing a unicolor result), but the
-    # text is still extractable and should always be flagged.
-    pii_redactions = [r for r in text_filtered if contains_pii(r["text"])]
-    non_pii = [r for r in text_filtered if not contains_pii(r["text"])]
-    bad_redactions = filter_redactions_by_pixmap(non_pii, page)
-    bad_redactions.extend(pii_redactions)
+    bad_redactions = filter_redactions_by_pii(text_filtered, page)
 
     # --- Annotation-based detection ---
     unapplied = get_unapplied_redact_annotations(page)
