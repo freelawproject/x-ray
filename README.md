@@ -100,6 +100,7 @@ However you run `xray` on the command line, you'll get JSON as output. When you 
 | `DARK_HIGHLIGHT_ANNOTATION` | A dark (usually black) Highlight annotation covers text. Highlights are meant for markup, not redaction — the text remains fully readable. |
 | `CROSS_HATCHED_PATTERN` | Text hidden under a cross-hatched (X-pattern) overlay. These repeating diagonal line patterns are drawn over dark rectangles as a visual redaction style. |
 | `TEXT_UNDER_IMAGE` | Text hidden under a dark raster image. Instead of using a vector rectangle, someone pasted a solid black image on top of the text. |
+| `PII_UNDER_RECTANGLE` | Personally identifiable information (e.g., a Social Security Number) hidden under a rectangle. Detected even under white rectangles that would normally be skipped as form field backgrounds. |
 | `TOC_BOOKMARK_LEAK` | A PDF bookmark/TOC entry reveals text that was redacted on the page. The heading was properly redacted but the bookmark still contains the original text. |
 
 You can also use it as a Python module, if you prefer the long-form:

@@ -460,6 +460,8 @@ def filter_redactions_by_pii(
     :returns: Bad redactions (PII + pixmap-verified non-PII).
     """
     pii = [r for r in redactions if contains_pii(r["text"])]
+    for r in pii:
+        r["type"] = BadRedactionType.PII_UNDER_RECTANGLE
     non_pii = [r for r in redactions if not contains_pii(r["text"])]
     result = filter_redactions_by_pixmap(non_pii, page)
     result.extend(pii)

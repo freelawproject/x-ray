@@ -501,6 +501,16 @@ class IntegrationTest(TestCase):
             any("808-57-6589" in t for t in all_texts),
             msg="Expected SSN '808-57-6589' to be detected, but it wasn't.",
         )
+        ssn_redaction = [
+            r
+            for rs in redactions.values()
+            for r in rs
+            if "808-57-6589" in r["text"]
+        ][0]
+        self.assertEqual(
+            ssn_redaction["type"],
+            BadRedactionType.PII_UNDER_RECTANGLE,
+        )
 
     def test_image_behind_text_no_results(self):
         """Are dark images behind text (not covering it) ignored?
