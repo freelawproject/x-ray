@@ -21,10 +21,10 @@
  - Detect dark Highlight annotations used as makeshift redactions ([issue](https://github.com/freelawproject/x-ray/issues/185))
  - Detect cross-hatched (X-pattern) redactions
  - Fix truncated date fragments (e.g., "03/23/") not being recognized as dates ([issue](https://github.com/freelawproject/x-ray/issues/30))
- - Detect dark images used as redaction overlays (ignores images drawn behind text)
+ - Detect dark images used as redaction overlays
  - Detect PDF bookmarks/TOC entries that leak redacted heading content ([issue](https://github.com/freelawproject/x-ray/issues/2))
  - Add `type` field to redaction output with `BadRedactionType` enum
- - Fix false TOC leak detections from colored highlight annotations
+ - Lower occlusion threshold from 80% to 75% to catch slightly short redaction bars
 
 ## Current Version
 

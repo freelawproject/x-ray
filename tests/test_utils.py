@@ -152,6 +152,21 @@ class OcclusionTest(TestCase):
             )
         self.assertEqual(len(chars), 64)
 
+    def test_low_occlusion_redaction(self):
+        """Are redaction bars slightly shorter than text still detected?
+
+        Some PDFs have black bars that are 12pt tall while text is
+        14pt, giving ~79% occlusion per character. The 0.7 threshold
+        catches these.
+        """
+        path = root_path / "low_occlusion_redaction.pdf"
+        redactions = xray.inspect(path)
+        self.assertTrue(
+            redactions,
+            msg="Expected bad redactions from low-occlusion bars, "
+            "but got none.",
+        )
+
     def test_thin_margin_lines_not_cross_hatches(self):
         """Are thin vertical margin lines ignored by cross-hatch detection?
 

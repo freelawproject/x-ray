@@ -243,7 +243,7 @@ def get_intersecting_chars(
             char_rect = fitz.Rect(char[3])
             char_rect.seqno = span_seq_no
             char_rect.fill = span_color
-            if intersects(char_rect, rectangles, occlusion_threshold=0.8):
+            if intersects(char_rect, rectangles, occlusion_threshold=0.75):
                 char_dict: CharDictType = {
                     "rect": char_rect,
                     "c": chr(char[0]),
