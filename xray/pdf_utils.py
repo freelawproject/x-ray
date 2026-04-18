@@ -448,10 +448,10 @@ def filter_redactions_by_pii(
 ) -> list[RedactionType]:
     """Split PII from non-PII redactions and filter appropriately.
 
-    Redactions containing PII patterns (e.g., SSNs) skip the pixmap
-    filter.  White rectangles hiding PII render as non-unicolor in
-    the pixmap due to form grid lines, but the text is still
-    extractable and should always be flagged.
+    Redactions containing PII patterns (e.g., SSNs) are considered
+    bad redactions even if they might otherwise be filtered out by
+    downstream filters. Find these redactions early in the
+    pipeline.
 
     Non-PII redactions go through the normal pixmap filter.
 
