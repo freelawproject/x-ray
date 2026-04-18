@@ -487,6 +487,21 @@ class IntegrationTest(TestCase):
             msg=f"Took {cpu:.1f}s CPU (expected <3s).",
         )
 
+    def test_ssn_under_white_rectangle(self):
+        """Are SSNs hidden under white rectangles still detected?
+
+        White rectangles normally skip the pixmap filter (they're
+        form field backgrounds). But if the text underneath matches
+        a PII pattern like an SSN, it should be flagged regardless.
+        """
+        path = root_path / "ssn_under_white_rect.pdf"
+        redactions = xray.inspect(path)
+        all_texts = [r["text"] for rs in redactions.values() for r in rs]
+        self.assertTrue(
+            any("808-57-6589" in t for t in all_texts),
+            msg="Expected SSN '808-57-6589' to be detected, but it wasn't.",
+        )
+
     def test_image_behind_text_no_results(self):
         """Are dark images behind text (not covering it) ignored?
 
