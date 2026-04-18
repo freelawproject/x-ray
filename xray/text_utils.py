@@ -94,6 +94,25 @@ def check_if_all_dates(redactions: PdfRedactionsDict) -> PdfRedactionsDict:
     return {}
 
 
+# Patterns that indicate personally identifiable information.
+# If text matches any of these, it should be flagged even under
+# a white rectangle (which would otherwise be skipped as a form
+# field background).
+_PII_PATTERNS = [
+    # Social Security Numbers: 123-45-6789
+    re.compile(r"\d{3}-\d{2}-\d{4}"),
+]
+
+
+def contains_pii(text: str) -> bool:
+    """Check if text contains personally identifiable information.
+
+    :param text: The text to check.
+    :returns: True if the text matches any known PII pattern.
+    """
+    return any(p.search(text) for p in _PII_PATTERNS)
+
+
 def looks_like_a_date(text: str) -> bool:
     """Is the redaction, in its entirety, a date?
 

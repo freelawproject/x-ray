@@ -14,7 +14,12 @@ from .custom_types import (
     PdfRedactionsDict,
     RedactionType,
 )
-from .text_utils import is_ok_words, is_repeated_chars, is_single_char
+from .text_utils import (
+    contains_pii,
+    is_ok_words,
+    is_repeated_chars,
+    is_single_char,
+)
 
 # Disable anti-aliasing when rendering and creating pixmaps
 fitz.TOOLS.set_aa_level(0)
@@ -148,7 +153,7 @@ def intersects(
     area_of_bbox = abs(text_rect.get_area())
 
     percent_occluded = greatest_occluded / area_of_bbox
-    return percent_occluded > occlusion_threshold
+    return percent_occluded >= occlusion_threshold
 
 
 # Matches CM/ECF header stamp text.  These vary by court but always
@@ -764,8 +769,15 @@ def get_bad_redactions(
     content_spans = get_content_spans(page)
     intersecting_chars = get_intersecting_chars(content_spans, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
-    bad_redactions = filter_redactions_by_text(redactions)
-    bad_redactions = filter_redactions_by_pixmap(bad_redactions, page)
+    text_filtered = filter_redactions_by_text(redactions)
+    # Redactions containing PII (e.g., SSNs) skip the pixmap filter.
+    # White rectangles hiding SSNs render as white in the pixmap
+    # (due to form grid lines preventing a unicolor result), but the
+    # text is still extractable and should always be flagged.
+    pii_redactions = [r for r in text_filtered if contains_pii(r["text"])]
+    non_pii = [r for r in text_filtered if not contains_pii(r["text"])]
+    bad_redactions = filter_redactions_by_pixmap(non_pii, page)
+    bad_redactions.extend(pii_redactions)
 
     # --- Annotation-based detection ---
     unapplied = get_unapplied_redact_annotations(page)
