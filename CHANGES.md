@@ -25,6 +25,8 @@
  - Detect PDF bookmarks/TOC entries that leak redacted heading content ([issue](https://github.com/freelawproject/x-ray/issues/2))
  - Add `type` field to redaction output with `BadRedactionType` enum
  - Lower occlusion threshold from 80% to 75% to catch slightly short redaction bars
+ - Fix cross-hatch false positives from map/chart hatching (color and density checks)
+ - Filter Word internal bookmarks (_Hlk, _Ref, etc.) from TOC leak detection
 
 ## Current Version
 
