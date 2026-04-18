@@ -14,7 +14,12 @@ from .custom_types import (
     PdfRedactionsDict,
     RedactionType,
 )
-from .text_utils import is_ok_words, is_repeated_chars, is_single_char
+from .text_utils import (
+    contains_pii,
+    is_ok_words,
+    is_repeated_chars,
+    is_single_char,
+)
 
 # Disable anti-aliasing when rendering and creating pixmaps
 fitz.TOOLS.set_aa_level(0)
@@ -148,7 +153,7 @@ def intersects(
     area_of_bbox = abs(text_rect.get_area())
 
     percent_occluded = greatest_occluded / area_of_bbox
-    return percent_occluded > occlusion_threshold
+    return percent_occluded >= occlusion_threshold
 
 
 # Matches CM/ECF header stamp text.  These vary by court but always
@@ -435,6 +440,32 @@ def _is_dark_color(
         return False
     luminance = 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]
     return luminance <= luminance_threshold
+
+
+def filter_redactions_by_pii(
+    redactions: list[RedactionType],
+    page: Page,
+) -> list[RedactionType]:
+    """Split PII from non-PII redactions and filter appropriately.
+
+    Redactions containing PII patterns (e.g., SSNs) are considered
+    bad redactions even if they might otherwise be filtered out by
+    downstream filters. Find these redactions early in the
+    pipeline.
+
+    Non-PII redactions go through the normal pixmap filter.
+
+    :param redactions: Text-filtered redaction candidates.
+    :param page: The PyMuPDF.Page for pixmap rendering.
+    :returns: Bad redactions (PII + pixmap-verified non-PII).
+    """
+    pii = [r for r in redactions if contains_pii(r["text"])]
+    for r in pii:
+        r["type"] = BadRedactionType.PII_UNDER_RECTANGLE
+    non_pii = [r for r in redactions if not contains_pii(r["text"])]
+    result = filter_redactions_by_pixmap(non_pii, page)
+    result.extend(pii)
+    return result
 
 
 def filter_redactions_by_pixmap(
@@ -764,8 +795,8 @@ def get_bad_redactions(
     content_spans = get_content_spans(page)
     intersecting_chars = get_intersecting_chars(content_spans, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
-    bad_redactions = filter_redactions_by_text(redactions)
-    bad_redactions = filter_redactions_by_pixmap(bad_redactions, page)
+    text_filtered = filter_redactions_by_text(redactions)
+    bad_redactions = filter_redactions_by_pii(text_filtered, page)
 
     # --- Annotation-based detection ---
     unapplied = get_unapplied_redact_annotations(page)
