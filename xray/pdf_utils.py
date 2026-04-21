@@ -515,10 +515,50 @@ def filter_redactions_by_pixmap(
     return bad_redactions
 
 
+def _extract_annot_redaction(
+    annot_rect: Rect,
+    page: Page,
+    redaction_type: BadRedactionType,
+) -> RedactionType | None:
+    """Build a RedactionType from an annotation's bounding box.
+
+    Clips the annotation to the visible page area, extracts text,
+    and returns a complete RedactionType dict.  Returns None if
+    there is no text or the annotation doesn't intersect the page.
+
+    :param annot_rect: The annotation's rectangle.
+    :param page: The PyMuPDF Page.
+    :param redaction_type: The BadRedactionType to assign.
+    :returns: A RedactionType dict, or None.
+    """
+    if not annot_rect.intersects(page.rect):
+        return None
+    visible_rect = annot_rect & page.rect
+    text = page.get_text("text", clip=visible_rect)
+    text = " ".join(text.split())
+    if not text:
+        return None
+    return {
+        "bbox": (
+            visible_rect.x0,
+            visible_rect.y0,
+            visible_rect.x1,
+            visible_rect.y1,
+        ),
+        "text": text,
+        "type": redaction_type,
+    }
+
+
 def get_bad_annotations(
     page: Page,
 ) -> tuple[list[RedactionType], list[RedactionType]]:
     """Find bad annotations: unapplied Redacts and dark Highlights.
+
+    Unapplied Redact annotations mark text for redaction but leave
+    the text visible and extractable.  Dark Highlight annotations
+    use a black (or very dark) highlight to obscure text instead of
+    a proper redaction tool.
 
     Iterates ``page.annots()`` once and splits results into two
     lists, avoiding a second pass over annotations.
@@ -532,28 +572,23 @@ def get_bad_annotations(
     for annot in page.annots() or []:
         annot_type = annot.type[0]
 
+        # Unapplied Redact annotations — the annotation was added
+        # but never applied, so the text is still readable.
         if annot_type == fitz.PDF_ANNOT_REDACT:
-            annot_rect = annot.rect
-            if not annot_rect.intersects(page.rect):
-                continue
-            visible_rect = annot_rect & page.rect
-            text = page.get_text("text", clip=visible_rect)
-            text = " ".join(text.split())
-            if text:
-                unapplied.append(
-                    {
-                        "bbox": (
-                            visible_rect.x0,
-                            visible_rect.y0,
-                            visible_rect.x1,
-                            visible_rect.y1,
-                        ),
-                        "text": text,
-                        "type": BadRedactionType.UNAPPLIED_REDACT_ANNOTATION,
-                    }
-                )
+            redaction = _extract_annot_redaction(
+                annot.rect,
+                page,
+                BadRedactionType.UNAPPLIED_REDACT_ANNOTATION,
+            )
+            if redaction:
+                unapplied.append(redaction)
 
+        # Dark Highlight annotations — highlights are meant for
+        # markup, not redaction.  Only flag dark (usually black)
+        # ones where the text remains fully readable underneath.
         elif annot_type == fitz.PDF_ANNOT_HIGHLIGHT:
+            # Highlight annotations use "stroke" (not "fill") for
+            # their color.
             stroke = annot.colors.get("stroke")
             if not stroke:
                 continue
@@ -562,26 +597,13 @@ def get_bad_annotations(
             if not _is_dark_color(rgb_255):
                 continue
 
-            annot_rect = annot.rect
-            if not annot_rect.intersects(page.rect):
-                continue
-
-            visible_rect = annot_rect & page.rect
-            text = page.get_text("text", clip=visible_rect)
-            text = " ".join(text.split())
-            if text:
-                highlights.append(
-                    {
-                        "bbox": (
-                            visible_rect.x0,
-                            visible_rect.y0,
-                            visible_rect.x1,
-                            visible_rect.y1,
-                        ),
-                        "text": text,
-                        "type": BadRedactionType.DARK_HIGHLIGHT_ANNOTATION,
-                    }
-                )
+            redaction = _extract_annot_redaction(
+                annot.rect,
+                page,
+                BadRedactionType.DARK_HIGHLIGHT_ANNOTATION,
+            )
+            if redaction:
+                highlights.append(redaction)
 
     return unapplied, highlights
 
