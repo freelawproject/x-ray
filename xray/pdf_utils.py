@@ -25,10 +25,15 @@ from .text_utils import (
 fitz.TOOLS.set_aa_level(0)
 
 
-def get_good_rectangles(page: Page) -> list[Rect]:
+def get_good_rectangles(
+    page: Page, drawings: list[dict] | None = None
+) -> list[Rect]:
     """Find rectangles in the PDFs that might be redactions.
 
     :param page: The PyMuPDF Page to look for rectangles within.
+    :param drawings: Pre-fetched drawings from ``page.get_drawings()``.
+        If None, they are fetched here.  Pass them in when multiple
+        functions need the same drawings to avoid duplicate work.
     :returns A list of PyMUPDF.Rect objects for each fully opaque rectangle
     that's big enough to be a possible redaction. If none, returns
     an empty list. Also enhances the Rect object by including the sequence
@@ -36,7 +41,8 @@ def get_good_rectangles(page: Page) -> list[Rect]:
     determine if a letter is above or below a rectangle or whether it's the
     same color.
     """
-    drawings = page.get_drawings()
+    if drawings is None:
+        drawings = page.get_drawings()
     good_rectangles = []
     for drawing in drawings:
         if drawing.get("fill_opacity") is None or drawing["fill_opacity"] != 1:
@@ -128,11 +134,6 @@ def intersects(
     :return True if any part of the bbox intersects with any of the rectangles,
     else False.
     """
-    for rect in rectangles + [text_rect]:
-        assert all([hasattr(rect, "seqno"), hasattr(rect, "fill")]), (
-            "Rectangle lacks required 'seqno' or 'fill' attribute."
-        )
-
     overlapping_areas = []
     for rect in rectangles:
         intersecting_area = abs(text_rect & rect)
@@ -288,21 +289,23 @@ def group_chars_by_rect(
     redactions = []
     # Sort the rectangles by reversed sequence key.
     seq_sorted_rects = sorted(rectangles, key=lambda x: x.seqno, reverse=True)
+    # Track which chars have been claimed by a rectangle so each
+    # char is only assigned to the topmost (highest seqno) one.
+    # Using a set of indices instead of list.remove() avoids the
+    # O(n²) cost of scanning the list on every removal.
+    claimed: set[int] = set()
     for rect in seq_sorted_rects:
         redaction: RedactionType = {
             "bbox": (rect.x0, rect.y0, rect.x1, rect.y1),
             "text": "",
             "type": BadRedactionType.TEXT_UNDER_RECTANGLE,
         }
-        # Make a copy of the chars list so we can manipulate it in the loop
-        char_copy = chars.copy()
-        for char in char_copy:
+        for i, char in enumerate(chars):
+            if i in claimed:
+                continue
             if abs(char["rect"] & rect):
-                # The char intersects with this rectangle. Add it to the
-                # redaction dict, and remove it from the list so it doesn't
-                # get analyzed again.
                 redaction["text"] += char["c"]
-                chars.remove(char)
+                claimed.add(i)
         redactions.append(redaction)
 
     return redactions
@@ -512,95 +515,75 @@ def filter_redactions_by_pixmap(
     return bad_redactions
 
 
-def get_unapplied_redact_annotations(page: Page) -> list[RedactionType]:
-    """Find Redact annotations that haven't been applied.
+def get_bad_annotations(
+    page: Page,
+) -> tuple[list[RedactionType], list[RedactionType]]:
+    """Find bad annotations: unapplied Redacts and dark Highlights.
 
-    Unapplied Redact annotations mark text for redaction but leave the text
-    visible and extractable. These are bad redactions because the text that
-    was supposed to be hidden is still readable.
-
-    :param page: The PyMuPDF Page to look for annotations within.
-    :returns: A list of RedactionType dicts for each unapplied redaction
-    annotation that contains text within the visible page area.
-    """
-    redactions = []
-    for annot in page.annots() or []:
-        if annot.type[0] != fitz.PDF_ANNOT_REDACT:
-            continue
-
-        annot_rect = annot.rect
-        if not annot_rect.intersects(page.rect):
-            continue
-
-        # Clip to visible area
-        visible_rect = annot_rect & page.rect
-        text = page.get_text("text", clip=visible_rect)
-        text = " ".join(text.split())
-        if text:
-            redaction: RedactionType = {
-                "bbox": (
-                    visible_rect.x0,
-                    visible_rect.y0,
-                    visible_rect.x1,
-                    visible_rect.y1,
-                ),
-                "text": text,
-                "type": BadRedactionType.UNAPPLIED_REDACT_ANNOTATION,
-            }
-            redactions.append(redaction)
-
-    return redactions
-
-
-def get_dark_highlight_annotations(page: Page) -> list[RedactionType]:
-    """Find dark Highlight annotations used as makeshift redactions.
-
-    Some documents use black (or very dark) Highlight annotations to
-    obscure text instead of proper redaction tools.  The text remains
-    fully readable and extractable underneath.  We only flag dark
-    highlights — bright-colored highlights (yellow, green, pink) are
-    legitimate markup, not redaction attempts.
+    Iterates ``page.annots()`` once and splits results into two
+    lists, avoiding a second pass over annotations.
 
     :param page: The PyMuPDF Page to look for annotations within.
-    :returns: A list of RedactionType dicts for each dark highlight
-    annotation that contains text within the visible page area.
+    :returns: A tuple of (unapplied_redacts, dark_highlights).
     """
-    redactions = []
+    unapplied: list[RedactionType] = []
+    highlights: list[RedactionType] = []
+
     for annot in page.annots() or []:
-        if annot.type[0] != fitz.PDF_ANNOT_HIGHLIGHT:
-            continue
+        annot_type = annot.type[0]
 
-        # Check if the highlight stroke color is dark.  Highlight
-        # annotations use "stroke" (not "fill") for their color.
-        stroke = annot.colors.get("stroke")
-        if not stroke:
-            continue
-        # Convert from 0–1 float range to 0–255 for _is_dark_color
-        rgb_255 = tuple(int(c * 255) for c in stroke)
-        if not _is_dark_color(rgb_255):
-            continue
+        if annot_type == fitz.PDF_ANNOT_REDACT:
+            annot_rect = annot.rect
+            if not annot_rect.intersects(page.rect):
+                continue
+            visible_rect = annot_rect & page.rect
+            text = page.get_text("text", clip=visible_rect)
+            text = " ".join(text.split())
+            if text:
+                unapplied.append(
+                    {
+                        "bbox": (
+                            visible_rect.x0,
+                            visible_rect.y0,
+                            visible_rect.x1,
+                            visible_rect.y1,
+                        ),
+                        "text": text,
+                        "type": BadRedactionType.UNAPPLIED_REDACT_ANNOTATION,
+                    }
+                )
 
-        annot_rect = annot.rect
-        if not annot_rect.intersects(page.rect):
-            continue
+        elif annot_type == fitz.PDF_ANNOT_HIGHLIGHT:
+            stroke = annot.colors.get("stroke")
+            if not stroke:
+                continue
+            # Convert from 0–1 float range to 0–255 for _is_dark_color
+            rgb_255 = tuple(int(c * 255) for c in stroke)
+            if not _is_dark_color(rgb_255):
+                continue
 
-        visible_rect = annot_rect & page.rect
-        text = page.get_text("text", clip=visible_rect)
-        text = " ".join(text.split())
-        if text:
-            redaction: RedactionType = {
-                "bbox": (
-                    visible_rect.x0,
-                    visible_rect.y0,
-                    visible_rect.x1,
-                    visible_rect.y1,
-                ),
-                "text": text,
-                "type": BadRedactionType.DARK_HIGHLIGHT_ANNOTATION,
-            }
-            redactions.append(redaction)
+            annot_rect = annot.rect
+            if not annot_rect.intersects(page.rect):
+                continue
 
-    return redactions
+            visible_rect = annot_rect & page.rect
+            text = page.get_text("text", clip=visible_rect)
+            text = " ".join(text.split())
+            if text:
+                highlights.append(
+                    {
+                        "bbox": (
+                            visible_rect.x0,
+                            visible_rect.y0,
+                            visible_rect.x1,
+                            visible_rect.y1,
+                        ),
+                        "text": text,
+                        "type": BadRedactionType.DARK_HIGHLIGHT_ANNOTATION,
+                    }
+                )
+
+    return unapplied, highlights
 
 
 def _is_x_hatch_drawing(drawing: dict) -> bool:
@@ -671,7 +654,9 @@ def _is_x_hatch_drawing(drawing: dict) -> bool:
     return True
 
 
-def get_cross_hatched_redactions(page: Page) -> list[RedactionType]:
+def get_cross_hatched_redactions(
+    page: Page, drawings: list[dict] | None = None
+) -> list[RedactionType]:
     """Find text hidden under cross-hatched (X-pattern) redactions.
 
     Some documents use a repeating X pattern drawn over dark
@@ -687,9 +672,11 @@ def get_cross_hatched_redactions(page: Page) -> list[RedactionType]:
     to remove false positives like repeated characters.
 
     :param page: The PyMuPDF Page to inspect.
+    :param drawings: Pre-fetched drawings from ``page.get_drawings()``.
     :returns: A list of RedactionType dicts for text under X-hatches.
     """
-    drawings = page.get_drawings()
+    if drawings is None:
+        drawings = page.get_drawings()
     x_hatches = [d for d in drawings if _is_x_hatch_drawing(d)]
     if not x_hatches:
         return []
@@ -803,8 +790,12 @@ def get_bad_redactions(
     """
     redaction_bboxes: list[tuple[float, ...]] = []
 
+    # Fetch drawings once — reused by both get_good_rectangles and
+    # get_cross_hatched_redactions to avoid parsing them twice.
+    drawings = page.get_drawings()
+
     # --- Rectangle-based detection (text under dark bars) ---
-    good_rectangles = get_good_rectangles(page)
+    good_rectangles = get_good_rectangles(page, drawings)
     # Collect bboxes only from dark rectangles — colored highlights
     # pass get_good_rectangles but shouldn't pollute the TOC leak
     # matcher.  We check the fill color directly rather than waiting
@@ -823,21 +814,20 @@ def get_bad_redactions(
     text_filtered = filter_redactions_by_text(redactions)
     bad_redactions = filter_redactions_by_pii(text_filtered, page)
 
-    # --- Annotation-based detection ---
-    unapplied = get_unapplied_redact_annotations(page)
+    # --- Annotation-based detection (single pass over annots) ---
+    unapplied, highlights = get_bad_annotations(page)
     for r in unapplied:
         redaction_bboxes.append(r["bbox"])
     unapplied = filter_redactions_by_text(unapplied)
     bad_redactions.extend(unapplied)
 
-    highlights = get_dark_highlight_annotations(page)
     for r in highlights:
         redaction_bboxes.append(r["bbox"])
     highlights = filter_redactions_by_text(highlights)
     bad_redactions.extend(highlights)
 
     # --- Pattern-based detection ---
-    cross_hatched = get_cross_hatched_redactions(page)
+    cross_hatched = get_cross_hatched_redactions(page, drawings)
     for r in cross_hatched:
         redaction_bboxes.append(r["bbox"])
     cross_hatched = filter_redactions_by_text(cross_hatched)

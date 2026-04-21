@@ -25,10 +25,10 @@ fitz.TOOLS.set_aa_level(0)
 from xray.pdf_utils import (  # noqa: E402
     _is_nearly_unicolor,
     filter_redactions_by_text,
+    get_bad_annotations,
     get_content_spans,
     get_good_rectangles,
     get_intersecting_chars,
-    get_unapplied_redact_annotations,
     group_chars_by_rect,
 )
 
@@ -120,7 +120,7 @@ def debug_page(page: fitz.Page, page_num: int) -> None:
                 print(f"      RGB{color}: {count}px ({pct:.1f}%)")
 
     # Stage 6: unapplied annotations
-    unapplied = get_unapplied_redact_annotations(page)
+    unapplied, _highlights = get_bad_annotations(page)
     unapplied_filtered = filter_redactions_by_text(unapplied)
     if unapplied_filtered:
         print(f"\n6. Unapplied Redact annotations: {len(unapplied_filtered)}")
