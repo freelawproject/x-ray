@@ -790,8 +790,18 @@ def get_bad_redactions(
 
     # --- Rectangle-based detection (text under dark bars) ---
     good_rectangles = get_good_rectangles(page)
+    # Collect bboxes only from dark rectangles — colored highlights
+    # pass get_good_rectangles but shouldn't pollute the TOC leak
+    # matcher.  We check the fill color directly rather than waiting
+    # for the pixmap filter, because properly applied redactions
+    # (text removed, black bar left) have no text and wouldn't
+    # survive the pixmap pipeline, but their black bars ARE evidence
+    # of redaction for TOC matching.
     for rect in good_rectangles:
-        redaction_bboxes.append((rect.x0, rect.y0, rect.x1, rect.y1))
+        if rect.fill is not None and _is_dark_color(
+            tuple(int(c * 255) for c in rect.fill)
+        ):
+            redaction_bboxes.append((rect.x0, rect.y0, rect.x1, rect.y1))
     content_spans = get_content_spans(page)
     intersecting_chars = get_intersecting_chars(content_spans, good_rectangles)
     redactions = group_chars_by_rect(intersecting_chars, good_rectangles)
