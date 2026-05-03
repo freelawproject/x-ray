@@ -342,6 +342,14 @@ def filter_redactions_by_text(
     # content, so it's not a meaningful redaction.
     redactions = filter(lambda r: "\ufffd" not in r["text"], redactions)
 
+    # Doesn't contain Unicode Private Use Area characters
+    # (U+E000–U+F8FF).  These are icon font glyphs (Font Awesome,
+    # etc.) from website screenshots, not document text.
+    redactions = filter(
+        lambda r: not any("\ue000" <= c <= "\uf8ff" for c in r["text"]),
+        redactions,
+    )
+
     # Doesn't contain non-whitespace control characters (< 0x20).
     # Real text never contains these — they indicate garbled font
     # encoding that happened to avoid U+FFFD.
