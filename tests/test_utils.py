@@ -152,6 +152,21 @@ class OcclusionTest(TestCase):
             )
         self.assertEqual(len(chars), 64)
 
+    def test_icon_font_text_no_results(self):
+        """Is text containing icon font glyphs ignored?
+
+        Website screenshots can have icon font characters (Font
+        Awesome, etc.) in the Unicode Private Use Area. These are
+        UI elements, not document text.
+        """
+        path = root_path / "icon_font_text.pdf"
+        redactions = xray.inspect(path)
+        self.assertEqual(
+            redactions,
+            {},
+            msg="Got redactions from icon font text, but shouldn't have.",
+        )
+
     def test_small_crosshatch_decorations_no_results(self):
         """Are small decorative cross-hatch patterns ignored?
 

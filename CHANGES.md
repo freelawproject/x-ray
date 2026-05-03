@@ -27,6 +27,7 @@
  - Lower occlusion threshold from 80% to 75% to catch slightly short redaction bars
  - Fix cross-hatch false positives from map/chart hatching (color, density, and minimum size checks)
  - Filter Word internal bookmarks (_Hlk, _Ref, etc.) from TOC leak detection
+ - Filter icon font glyphs (Unicode Private Use Area) from website screenshots
 
 ## Current Version
 
