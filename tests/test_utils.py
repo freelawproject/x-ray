@@ -3,6 +3,7 @@ X-Ray Tests
 """
 
 import os
+import re
 import unittest
 from pathlib import Path
 from unittest import TestCase
@@ -17,7 +18,7 @@ from xray.pdf_utils import (
     get_intersecting_chars,
     intersects,
 )
-from xray.text_utils import looks_like_a_date
+from xray.text_utils import is_ok_words, looks_like_a_date
 
 root_path = Path(__file__).resolve().parent / "assets"
 
@@ -47,6 +48,27 @@ class TextTest(TestCase):
         for d in not_dates:
             with self.subTest(d):
                 self.assertFalse(looks_like_a_date(d))
+
+    def test_is_ok_words_regex_ordering(self):
+        """Short-before-long alternation caused "re" to fire on "redacted".
+
+        Python's re tries alternatives left-to-right; the first match wins.
+        The old pattern listed "re" before "redacted", so at position 0 of
+        "redacted" the engine matched "re", left "dacted" as the remainder,
+        and is_ok_words returned True — a false positive.
+        """
+        old_pattern = (
+            r"confidential|name +redacted|privileged?|re|red|reda|redac|redact|"
+            r"redacte|redacted|redacted +and +publicly +filed|"
+        )
+
+        # old: "re" fires first, leaving a non-empty remainder → false positive
+        self.assertEqual(
+            re.sub(old_pattern, "", "redacted", flags=re.IGNORECASE), "dacted"
+        )
+
+        # fixed: full word matches → correctly filtered
+        self.assertFalse(is_ok_words("redacted"))
 
 
 class RectTest(TestCase):
