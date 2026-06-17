@@ -84,6 +84,10 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.benchmarks/
+benchmark_*.svg
+benchmark_*.json
+benchmark_*.prof
 
 # Translations
 *.mo

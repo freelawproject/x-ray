@@ -56,10 +56,22 @@ dev = [
     "pre-commit>=3.3.3",
     "ipython>=8.12.0",
     "types-requests>=2.26.0",
+    "pytest-benchmark>=5.2.3",
 ]
 
 [tool.setuptools]
 packages = [ "xray" ]
+
+[tool.pytest.ini_options]
+addopts = "--benchmark-disable"
+python_files = [
+  "test_*.py",
+  "benchmark_*.py",
+]
+python_functions = [
+  "test_*",
+  "benchmark_*",
+]
 
 [tool.ruff]
 line-length = 79
