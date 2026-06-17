@@ -4,13 +4,13 @@ X-Ray Tests
 
 import os
 import unittest
-from pathlib import Path
 from unittest import TestCase
 
 import fitz
 from fitz import Rect
 
 import xray
+from tests import ASSETS
 from xray.pdf_utils import (
     get_bad_redactions,
     get_good_rectangles,
@@ -18,8 +18,6 @@ from xray.pdf_utils import (
     intersects,
 )
 from xray.text_utils import looks_like_a_date
-
-root_path = Path(__file__).resolve().parent / "assets"
 
 
 class TextTest(TestCase):
@@ -54,8 +52,8 @@ class RectTest(TestCase):
 
     def test_we_find_rectangles_when_we_should(self):
         paths = (
-            root_path / "rectangles_yes.pdf",
-            root_path / "rectangles_yes_2.pdf",
+            ASSETS / "rectangles_yes.pdf",
+            ASSETS / "rectangles_yes_2.pdf",
         )
         for path in paths:
             with fitz.open(path) as pdf, self.subTest(f"{path=}"):
@@ -63,7 +61,7 @@ class RectTest(TestCase):
                 self.assertTrue(get_good_rectangles(page))
 
     def test_we_do_not_find_rectangles_when_we_should_not(self):
-        path = root_path / "rectangles_no.pdf"
+        path = ASSETS / "rectangles_no.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             self.assertFalse(get_good_rectangles(page))
@@ -74,8 +72,8 @@ def rectangle_factory(
 ) -> Rect:
     """Factory for making little rectangles with extra attributes"""
     r = Rect(*bbox)
-    r.seqno = seqno
-    r.fill = fill
+    r.seqno = seqno  # type: ignore
+    r.fill = fill  # type: ignore
     return r
 
 
@@ -138,21 +136,21 @@ class OcclusionTest(TestCase):
     """Can we get a list of bad redactions?"""
 
     def test_finding_bad_redactions(self):
-        path = root_path / "rectangles_yes.pdf"
+        path = ASSETS / "rectangles_yes.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 64)
 
     def test_cross_hatches_are_ok(self):
-        path = root_path / "bad_cross_hatched_redactions.pdf"
+        path = ASSETS / "bad_cross_hatched_redactions.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 639)
 
     def test_ignoring_partial_occlusions(self):
-        path = root_path / "partial_intersections_ok.pdf"
+        path = ASSETS / "partial_intersections_ok.pdf"
         with fitz.open(path) as pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
@@ -172,7 +170,7 @@ class OcclusionTest(TestCase):
         there's no bad redaction there. Someday, we should fix this, but it
         seems very difficult.
         """
-        path = root_path / "hidden_text_on_visible_text.pdf"
+        path = ASSETS / "hidden_text_on_visible_text.pdf"
         redactions = xray.inspect(path)
         expected_redaction_count = 2
         self.assertEqual(
@@ -197,7 +195,7 @@ class OcclusionTest(TestCase):
             "rect_ordering_6.19.pdf",
         )
         for path in paths:
-            path = root_path / path
+            path = ASSETS / path
             with self.subTest(f"{path=}"):
                 with fitz.open(path) as pdf:
                     page = pdf[0]
@@ -215,15 +213,15 @@ class InspectApiTest(TestCase):
     def test_inspect_works_with_path_or_str(self):
         path_str = "rectangles_yes.pdf"
         paths = (
-            root_path / path_str,
-            os.path.join(str(root_path), path_str),
+            ASSETS / path_str,
+            os.path.join(str(ASSETS), path_str),
         )
         for path in paths:
             redactions = xray.inspect(path)
             self.assertTrue(redactions)
 
     def test_inspect_works_with_bytes(self):
-        path = root_path / "rectangles_yes.pdf"
+        path = ASSETS / "rectangles_yes.pdf"
         with open(path, "rb") as f:
             data = f.read()
 
@@ -234,7 +232,7 @@ class InspectApiTest(TestCase):
 class IntegrationTest(TestCase):
     """Do our highest-level APIs work?"""
 
-    path = root_path / "rectangles_yes.pdf"
+    path = ASSETS / "rectangles_yes.pdf"
 
     def test_bad_redactions_on_single_page(self):
         with fitz.open(self.path) as pdf:
@@ -323,7 +321,7 @@ class IntegrationTest(TestCase):
             "no_bad_redactions.8.1.pdf",
         )
         for path in paths:
-            path = root_path / path
+            path = ASSETS / path
             with self.subTest(f"{path=}"):
                 redactions = xray.inspect(path)
                 self.assertEqual(
@@ -340,7 +338,7 @@ class IntegrationTest(TestCase):
             "whitespace_redaction_with_comma.pdf",
         )
         for path in paths:
-            redactions = xray.inspect(root_path / path)
+            redactions = xray.inspect(ASSETS / path)
             self.assertEqual(
                 redactions,
                 {},
@@ -350,7 +348,7 @@ class IntegrationTest(TestCase):
 
     def test_unfilled_rect(self):
         """Do unfilled boxes (with only borders and no fill) get ignored?"""
-        path = root_path / "unfilled_rect.pdf"
+        path = ASSETS / "unfilled_rect.pdf"
         redactions = xray.inspect(path)
         self.assertEqual(
             redactions,
@@ -359,7 +357,7 @@ class IntegrationTest(TestCase):
         )
 
     def test_ok_words_not_redacted(self):
-        path = root_path / "ok_words.pdf"
+        path = ASSETS / "ok_words.pdf"
         redactions = xray.inspect(path)
         self.assertEqual(
             redactions,
@@ -368,7 +366,7 @@ class IntegrationTest(TestCase):
         )
 
     def test_multiline_redaction(self):
-        path = root_path / "multi_line_redaction_ok.pdf"
+        path = ASSETS / "multi_line_redaction_ok.pdf"
         redactions = xray.inspect(path)
         self.assertEqual(
             redactions,
