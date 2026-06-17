@@ -128,7 +128,9 @@ def get_accuracy_test_cases():
         spec = GROUND_TRUTH.get(pdf.name, {})  # type: ignore
         category = spec.get("category", "unknown")
         expected_count = spec.get("expected_detections", 0)
-        cases.append(pytest.param((pdf, category, expected_count), id=pdf.name))  # type: ignore
+        cases.append(
+            pytest.param((pdf, category, expected_count), id=pdf.name)
+        )  # type: ignore
     return cases
 
 

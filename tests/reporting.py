@@ -8,7 +8,9 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 
-DEFAULT_REPORT_PATH = Path(__file__).resolve().parent / "benchmarks" / "report.html"
+DEFAULT_REPORT_PATH = (
+    Path(__file__).resolve().parent / "benchmarks" / "report.html"
+)
 TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
 
 
@@ -82,15 +84,15 @@ def load_benchmark_report_data(benchmark_dir: Path) -> ReportData:
         )
 
         accuracy_benchmarks = [
-            benchmark for benchmark in benchmarks if benchmark.get("extra_info")
+            benchmark
+            for benchmark in benchmarks
+            if benchmark.get("extra_info")
         ]
         if accuracy_benchmarks:
             accuracy_timeline.append(
                 {
                     "timestamp": data.get("commit_info", {}).get("time", ""),
-                    "commit_id": data.get("commit_info", {}).get("id", "")[
-                        :8
-                    ],
+                    "commit_id": data.get("commit_info", {}).get("id", "")[:8],
                     "by_category": accuracy_by_category(accuracy_benchmarks),
                 }
             )
@@ -251,8 +253,12 @@ def prep_perf_context(
             )
     has_prev = bool(prev_lookup)
 
-    mins_ms = [round(benchmark["stats"].min * 1000, 3) for benchmark in by_duration]
-    maxes_ms = [round(benchmark["stats"].max * 1000, 3) for benchmark in by_duration]
+    mins_ms = [
+        round(benchmark["stats"].min * 1000, 3) for benchmark in by_duration
+    ]
+    maxes_ms = [
+        round(benchmark["stats"].max * 1000, 3) for benchmark in by_duration
+    ]
     g_min = min(mins_ms)
     g_max = max(maxes_ms)
     log_min = math.log10(max(g_min, 0.001))
