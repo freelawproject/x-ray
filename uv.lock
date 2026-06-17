@@ -682,7 +682,7 @@ wheels = [
 [[package]]
 name = "pytest-benchmark"
 version = "5.2.3"
-source = { git = "https://github.com/KRRT7/pytest-benchmark.git?branch=greenfield#de77bd0998d37d1b8f1204da9227a1ea2b2a5aa5" }
+source = { git = "https://github.com/KRRT7/pytest-benchmark.git?branch=greenfield#355d28d73e36148c16d54cee3959df7a522b0d88" }
 dependencies = [
     { name = "py-cpuinfo2" },
     { name = "pytest" },
