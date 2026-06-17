@@ -24,7 +24,9 @@ def benchmark_get_bad_redactions_clean_doc(benchmark, tricky_clean_page):
     assert redactions == []
 
 
-def benchmark_inspect_path(benchmark, bad_redaction_path, expected_redaction_text):
+def benchmark_inspect_path(
+    benchmark, bad_redaction_path, expected_redaction_text
+):
     redactions = benchmark(xray.inspect, bad_redaction_path)
 
     assert [redaction["text"] for redaction in redactions[1]] == (
