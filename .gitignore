@@ -85,6 +85,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 .benchmarks/
+tests/benchmarks/report.html
 benchmark_*.svg
 benchmark_*.json
 benchmark_*.prof

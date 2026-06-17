@@ -1,0 +1,13 @@
+{% if data.losses or data.gains %}
+<details>
+  <summary>show</summary>
+  {% for r in data.losses %}
+  <div class="redaction loss">−&nbsp;<strong>{{ r.text }}</strong> <span class="bbox">p{{ r.page }} {{ r.bbox }}</span>
+  </div>
+  {% endfor %}
+  {% for r in data.gains %}
+  <div class="redaction gain">+&nbsp;<strong>{{ r.text }}</strong> <span class="bbox">p{{ r.page }} {{ r.bbox }}</span>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
