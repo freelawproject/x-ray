@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import cast
+
 import pytest
 
 import xray
@@ -124,13 +127,13 @@ def get_accuracy_test_cases():
     """Parametrize with (pdf, category, expected_count) tuples."""
     cases = []
     for pdf_param in BENCHMARK_ASSETS:
-        pdf = pdf_param.values[0]  # Extract Path from pytest.param
-        spec = GROUND_TRUTH.get(pdf.name, {})  # type: ignore
+        pdf = cast(Path, pdf_param.values[0])
+        spec = GROUND_TRUTH.get(pdf.name, {})
         category = spec.get("category", "unknown")
         expected_count = spec.get("expected_detections", 0)
         cases.append(
             pytest.param((pdf, category, expected_count), id=pdf.name)
-        )  # type: ignore
+        )
     return cases
 
 

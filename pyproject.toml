@@ -59,6 +59,9 @@ dev = [
     "pytest-benchmark>=5.2.3",
 ]
 
+[tool.uv.sources]
+pytest-benchmark = { git = "https://github.com/KRRT7/pytest-benchmark.git", branch = "greenfield" }
+
 [tool.setuptools]
 packages = [ "xray" ]
 

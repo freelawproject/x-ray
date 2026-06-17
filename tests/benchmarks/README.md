@@ -78,6 +78,14 @@ Write a JSON report:
 uv run pytest tests/benchmarks/performance --benchmark-enable --benchmark-json=benchmark.json
 ```
 
+Write an HTML report:
+
+```sh
+uv run pytest tests/benchmarks/performance --benchmark-enable --benchmark-html=tests/benchmarks/report.html
+```
+
+HTML reports require the optional `pytest-benchmark[html]` dependencies.
+
 Generate histograms:
 
 ```sh
