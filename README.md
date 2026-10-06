@@ -10,11 +10,11 @@ way, they just draw a black rectangle or a black highlight on top of black
 text and call it a day. Well, when that happens you just select the text under
 the rectangle, and you can read it again. Not great.
 
-After witnessing this problem for years (our favorite is the doc that shared 
+After witnessing this problem for years (our favorite is the doc that shared
 Taylor Swift's personal phone number), we decided it would be good to do
-something about it. 
+something about it.
 
-This tool is our answer. You give the tool the path to a PDF. It tells you if 
+This tool is our answer. You give the tool the path to a PDF. It tells you if
 it has worthless redactions in it and whether to call Taylor (don't).
 
 
@@ -104,13 +104,24 @@ If you want a bit more, you can, of course, use `xray` in Python:
 ```python
 from pprint import pprint
 import xray
-bad_redactions = xray.inspect("some/path/to/your/file.pdf")  # Pathlib works too
+
+bad_redactions = xray.inspect(
+    "some/path/to/your/file.pdf"
+)  # Pathlib works too
 pprint(bad_redactions)
-{1: [{'bbox': (58.550079345703125,
-               72.19873046875,
-               75.65007781982422,
-               739.3987426757812),
-      'text': 'Aragorn is the one true king.'}]}
+{
+    1: [
+        {
+            "bbox": (
+                58.550079345703125,
+                72.19873046875,
+                75.65007781982422,
+                739.3987426757812,
+            ),
+            "text": "Aragorn is the one true king.",
+        }
+    ]
+}
 ```
 
 The output is the same as above, except it's a Python object, not a JSON object.
