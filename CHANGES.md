@@ -6,7 +6,10 @@
 
 ## Upcoming Changes
 
- - N/A
+ - Breaking change: direct calls to `xray.inspect()` and `xray.cli()`
+   now require `await`.
+ - Replaced Requests with async httpx2 downloads, with HTTP/2 and redirects
+   enabled and the existing 10-second timeout preserved.
 
 ## Current Version
 

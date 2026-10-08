@@ -10,11 +10,11 @@ way, they just draw a black rectangle or a black highlight on top of black
 text and call it a day. Well, when that happens you just select the text under
 the rectangle, and you can read it again. Not great.
 
-After witnessing this problem for years (our favorite is the doc that shared 
+After witnessing this problem for years (our favorite is the doc that shared
 Taylor Swift's personal phone number), we decided it would be good to do
-something about it. 
+something about it.
 
-This tool is our answer. You give the tool the path to a PDF. It tells you if 
+This tool is our answer. You give the tool the path to a PDF. It tells you if
 it has worthless redactions in it and whether to call Taylor (don't).
 
 
@@ -99,12 +99,15 @@ You can also use it as a Python module, if you prefer the long-form:
 
 But that's not as easy to remember.
 
-If you want a bit more, you can, of course, use `xray` in Python:
+In an async function or a notebook that supports top-level `await`, use `xray`
+in Python:
 
 ```python
 from pprint import pprint
+
 import xray
-bad_redactions = xray.inspect("some/path/to/your/file.pdf")  # Pathlib works too
+
+bad_redactions = await xray.inspect("some/path/to/your/file.pdf")
 pprint(bad_redactions)
 {1: [{'bbox': (58.550079345703125,
                72.19873046875,
@@ -115,11 +118,26 @@ pprint(bad_redactions)
 
 The output is the same as above, except it's a Python object, not a JSON object.
 
+`inspect()` is asynchronous for every input type, including `pathlib.Path`.
+In a synchronous script, import `asyncio` and use
+`asyncio.run(xray.inspect(...))` at the entry point. The command-line usage
+stays the same.
+
+URL downloads use httpx2 with HTTP/2 enabled, redirects followed, and a
+10-second timeout. PDF analysis runs synchronously after downloading.
+
 If you already have the file contents as a `bytes` object, that'll work too:
 
 ```python
-some_bytes = requests.get("https://lotr-secrets.com/some-doc.pdf").content
-bad_redactions = xray.inspect(some_bytes)
+import httpx2
+import xray
+
+async with httpx2.AsyncClient(
+    http2=True, follow_redirects=True, timeout=10
+) as client:
+    response = await client.get("https://lotr-secrets.com/some-doc.pdf")
+    response.raise_for_status()
+bad_redactions = await xray.inspect(response.content)
 ```
 
 Note that because the `inspect` method uses the same signature no matter what,
@@ -135,7 +153,7 @@ This means that if you provide the filename on disk as a bytes object instead
 of a `str`, it's not going to work. This will fail:
 
 ```python
-xray.inspect(b"some-file-path.pdf")
+await xray.inspect(b"some-file-path.pdf")
 ```
 
 That's pretty much it. There are no configuration files or other variables to
