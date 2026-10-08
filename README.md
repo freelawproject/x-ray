@@ -109,11 +109,19 @@ import xray
 
 bad_redactions = await xray.inspect("some/path/to/your/file.pdf")
 pprint(bad_redactions)
-{1: [{'bbox': (58.550079345703125,
-               72.19873046875,
-               75.65007781982422,
-               739.3987426757812),
-      'text': 'Aragorn is the one true king.'}]}
+{
+    1: [
+        {
+            "bbox": (
+                58.550079345703125,
+                72.19873046875,
+                75.65007781982422,
+                739.3987426757812,
+            ),
+            "text": "Aragorn is the one true king.",
+        }
+    ]
+}
 ```
 
 The output is the same as above, except it's a Python object, not a JSON object.
