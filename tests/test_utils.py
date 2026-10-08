@@ -5,7 +5,7 @@ X-Ray Tests
 import os
 import unittest
 from pathlib import Path
-from unittest import TestCase
+from unittest import IsolatedAsyncioTestCase, TestCase
 
 import fitz
 from fitz import Rect
@@ -134,7 +134,7 @@ class IntersectionTest(TestCase):
         )
 
 
-class OcclusionTest(TestCase):
+class OcclusionTest(IsolatedAsyncioTestCase):
     """Can we get a list of bad redactions?"""
 
     def test_finding_bad_redactions(self):
@@ -159,7 +159,7 @@ class OcclusionTest(TestCase):
         self.assertEqual(len(chars), 0)
 
     @unittest.expectedFailure
-    def test_overlapping_text(self):
+    async def test_overlapping_text(self):
         """Do we find bad redactions with visible text below them?
 
         This test case is a nasty one. If you look closely at LLC with your
@@ -173,7 +173,7 @@ class OcclusionTest(TestCase):
         seems very difficult.
         """
         path = root_path / "hidden_text_on_visible_text.pdf"
-        redactions = xray.inspect(path)
+        redactions = await xray.inspect(path)
         expected_redaction_count = 2
         self.assertEqual(
             len(list(redactions.values())),
@@ -209,29 +209,29 @@ class OcclusionTest(TestCase):
                 )
 
 
-class InspectApiTest(TestCase):
+class InspectApiTest(IsolatedAsyncioTestCase):
     """Does the API of the inspect method work properly?"""
 
-    def test_inspect_works_with_path_or_str(self):
+    async def test_inspect_works_with_path_or_str(self):
         path_str = "rectangles_yes.pdf"
         paths = (
             root_path / path_str,
             os.path.join(str(root_path), path_str),
         )
         for path in paths:
-            redactions = xray.inspect(path)
+            redactions = await xray.inspect(path)
             self.assertTrue(redactions)
 
-    def test_inspect_works_with_bytes(self):
+    async def test_inspect_works_with_bytes(self):
         path = root_path / "rectangles_yes.pdf"
         with open(path, "rb") as f:
             data = f.read()
 
-        redactions = xray.inspect(data)
+        redactions = await xray.inspect(data)
         self.assertTrue(redactions)
 
 
-class IntegrationTest(TestCase):
+class IntegrationTest(IsolatedAsyncioTestCase):
     """Do our highest-level APIs work?"""
 
     path = root_path / "rectangles_yes.pdf"
@@ -250,11 +250,11 @@ class IntegrationTest(TestCase):
             f"{bad_redactions}",
         )
 
-    def test_inspect_method_on_a_filepath(self):
-        redactions = xray.inspect(self.path)
+    async def test_inspect_method_on_a_filepath(self):
+        redactions = await xray.inspect(self.path)
         self.assertEqual(len(redactions[1]), 3)
 
-    def test_tricky_rectangles(self):
+    async def test_tricky_rectangles(self):
         """Check that tricky PDFs don't create false positives.
 
         These are a variety of tough cases that don't have redactions, but
@@ -325,14 +325,14 @@ class IntegrationTest(TestCase):
         for path in paths:
             path = root_path / path
             with self.subTest(f"{path=}"):
-                redactions = xray.inspect(path)
+                redactions = await xray.inspect(path)
                 self.assertEqual(
                     redactions,
                     {},
                     msg="Didn't get empty dict when there were no redactions.",
                 )
 
-    def test_whitespace_only_redaction_no_results(self):
+    async def test_whitespace_only_redaction_no_results(self):
         """Do we ignore redactions containing only whitespace chars?"""
         paths = (
             "whitespace_redactions.pdf",
@@ -340,7 +340,7 @@ class IntegrationTest(TestCase):
             "whitespace_redaction_with_comma.pdf",
         )
         for path in paths:
-            redactions = xray.inspect(root_path / path)
+            redactions = await xray.inspect(root_path / path)
             self.assertEqual(
                 redactions,
                 {},
@@ -348,28 +348,28 @@ class IntegrationTest(TestCase):
                 "whitespace-filled redactions.",
             )
 
-    def test_unfilled_rect(self):
+    async def test_unfilled_rect(self):
         """Do unfilled boxes (with only borders and no fill) get ignored?"""
         path = root_path / "unfilled_rect.pdf"
-        redactions = xray.inspect(path)
+        redactions = await xray.inspect(path)
         self.assertEqual(
             redactions,
             {},
             msg="Got redactions 'under' an unfilled rectangle.",
         )
 
-    def test_ok_words_not_redacted(self):
+    async def test_ok_words_not_redacted(self):
         path = root_path / "ok_words.pdf"
-        redactions = xray.inspect(path)
+        redactions = await xray.inspect(path)
         self.assertEqual(
             redactions,
             {},
             msg="Got redaction even though none in document",
         )
 
-    def test_multiline_redaction(self):
+    async def test_multiline_redaction(self):
         path = root_path / "multi_line_redaction_ok.pdf"
-        redactions = xray.inspect(path)
+        redactions = await xray.inspect(path)
         self.assertEqual(
             redactions,
             {},

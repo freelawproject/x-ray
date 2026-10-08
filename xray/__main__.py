@@ -1,8 +1,11 @@
-import json
-import sys
+import asyncio
 
-import xray
+from . import cli
+
+
+def main() -> None:
+    asyncio.run(cli())
+
 
 if __name__ == "__main__":
-    bad_redactions = xray.inspect(sys.argv[1])
-    print(json.dumps(bad_redactions, indent=2))
+    main()
