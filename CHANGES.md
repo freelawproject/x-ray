@@ -6,7 +6,9 @@
 
 ## Upcoming Changes
 
- - N/A
+ - Replaced Requests with async httpx2 downloads, with HTTP/2 and redirects
+   enabled and the existing 10-second timeout preserved.
+ - Update development dependencies, pre-commit hooks, and GitHub Actions.
 
 ## Current Version
 
