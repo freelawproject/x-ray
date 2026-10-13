@@ -35,7 +35,7 @@ classifiers = [
 ]
 dependencies = [
     "PyMuPDF==1.24.14",
-    "requests>=2.26.0",
+    "httpx2[http2]>=2.13.1",
 ]
 
 urls.Homepage = "https://free.law/projects/x-ray"
@@ -47,15 +47,15 @@ urls.Issues = "https://github.com/freelawproject/x-ray/issues"
 urls.Funding = "https://www.courtlistener.com/donate/?referrer=pypi-xray"
 
 [project.scripts]
-xray = "xray.__init__:cli"
+xray = "xray.__main__:main"
 
 [dependency-groups]
 dev = [
-    "mypy>=0.910",
-    "wheel>=0.38.2",
-    "pre-commit>=3.3.3",
-    "ipython>=8.12.0",
-    "types-requests>=2.26.0",
+    "mypy>=2.4.0",
+    "wheel>=0.48.0",
+    "pre-commit>=4.6.2",
+    "ipython>=8.39.0; python_version < '3.11'",
+    "ipython>=9.17.1; python_version >= '3.11'",
 ]
 
 [tool.setuptools]

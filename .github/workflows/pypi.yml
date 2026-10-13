@@ -7,13 +7,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
-          version: "0.9.x"
+          version: "0.12.x"
 
       - name: Build
         run: uv build
