@@ -9,7 +9,7 @@ name = "x-ray"
 version = "0.3.6"
 description = "A library and microservice to find bad redactions in PDFs"
 authors = [{ name = "Free Law Project", email = "info@free.law" }]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
 license = "BSD-2-Clause"
 keywords = [
@@ -24,11 +24,11 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -54,8 +54,7 @@ dev = [
     "mypy>=2.4.0",
     "wheel>=0.48.0",
     "pre-commit>=4.6.2",
-    "ipython>=8.39.0; python_version < '3.11'",
-    "ipython>=9.17.1; python_version >= '3.11'",
+    "ipython>=9.17.1",
 ]
 
 [tool.setuptools]
