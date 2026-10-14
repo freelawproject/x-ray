@@ -14,40 +14,59 @@ some meta information.
 
 import sys
 import time
+from collections.abc import Callable
+from typing import Literal, Protocol
 
-import fitz
+import pymupdf as fitz
+
+from xray._pymupdf import BBox, open_document
+
+TextBlock = tuple[float, float, float, float, str, int, int]
+make_rect: Callable[[BBox], fitz.Rect] = fitz.Rect
+
+
+class _SaveDocument(Protocol):
+    def __call__(
+        self, filename: str, *, garbage: int, deflate: bool, clean: bool
+    ) -> None: ...
+
 
 print(fitz.__doc__)
 t0 = time.time()
-doc1 = fitz.open(sys.argv[1])
-doc2 = fitz.open()
+doc1 = open_document(sys.argv[1])
+doc2 = open_document()
 red = (1, 0, 0)
 blue = (0, 0, 1)
 green = (0, 1, 0)
 gray = (0.9, 0.9, 0.9)
 
-for page1 in doc1:
-    blks = page1.get_text("blocks")  # read text blocks of input page
+for page_index in range(len(doc1)):
+    page1 = doc1[page_index]
+    get_blocks: Callable[[Literal["blocks"]], list[TextBlock]] = page1.get_text
+    blks = get_blocks("blocks")
     # create new page in output with /MediaBox dimensions
-    page2 = doc2.new_page(
-        -1, width=page1.mediabox_size[0], height=page1.mediabox_size[1]
-    )
+    page_size: fitz.Point = page1.mediabox_size
+    page2 = doc2.new_page(-1, width=page_size.x, height=page_size.y)
     # the text font we use
-    page2.insert_font(fontfile=None, fontname="Helvetica")
-    img = page2.new_shape()  # prepare /Contents object
+    insert_font: Callable[[str], int] = page2.insert_font
+    insert_font("Helvetica")
+    new_shape: Callable[[], fitz.Shape] = page2.new_shape
+    img = new_shape()  # prepare /Contents object
 
     # calculate /CropBox & displacement
-    disp = fitz.Rect(page1.cropbox_position, page1.cropbox_position)
-    croprect = page1.rect + disp
+    position: fitz.Point = page1.cropbox_position
+    disp = make_rect((position.x, position.y, position.x, position.y))
+    page_rect: fitz.Rect = page1.rect
+    croprect: fitz.Rect = page_rect + disp
 
     # draw original /CropBox rectangle
     img.draw_rect(croprect)
     img.finish(color=gray, fill=gray)
 
     for b in blks:  # loop through the blocks
-        r = fitz.Rect(b[:4])  # block rectangle
-        # add dislacement of original /CropBox
-        r += disp
+        # Add displacement of original /CropBox.
+        bbox: BBox = b[:4]
+        r: fitz.Rect = make_rect(bbox) + disp
         img.draw_rect(r)  # surround block rectangle
 
         if b[-1] == 1:  # if image block ...
@@ -59,10 +78,12 @@ for page1 in doc1:
 
         img.finish(width=0.3, color=color)
 
-        if r.is_empty:  # do not rely on meaningful rects
+        is_empty: bool = r.is_empty
+        page_number: int = page1.number
+        if is_empty:  # do not rely on meaningful rects
             print(
                 "skipping text of empty rect at (%g, %g) on page %i"  # noqa: UP031
-                % (r.x0, r.y0, page1.number)
+                % (r.x0, r.y0, page_number)
             )
         else:
             # insert text of the block using a small, indicative fontsize
@@ -78,6 +99,8 @@ for page1 in doc1:
     img.commit()  # store /Contents of out page
 
 # save output file
-doc2.save(f"layout-{doc1.name}", garbage=4, deflate=True, clean=True)
+save: _SaveDocument = doc2.save
+document_name: str = doc1.name
+save(f"layout-{document_name}", garbage=4, deflate=True, clean=True)
 t1 = time.time()
 print(f"total time: {t1 - t0:g} sec")

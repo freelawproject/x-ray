@@ -3,19 +3,28 @@ Utilities for working with PDFs and redactions
 """
 
 import re
-import typing
+from collections.abc import Callable
 
-import fitz
-from fitz import Page, Rect
+import pymupdf as fitz
+from pymupdf import Document, Page, Rect
 
+from ._pymupdf import (
+    BBox,
+    Drawing,
+    InsertPdf,
+    TextSpan,
+    TracedRect,
+    open_document,
+    set_aa_level,
+)
 from .custom_types import CharDictType, RedactionType
 from .text_utils import is_ok_words, is_repeated_chars
 
 # Disable anti-aliasing when rendering and creating pixmaps
-fitz.TOOLS.set_aa_level(0)
+set_aa_level(0)
 
 
-def get_good_rectangles(page: Page) -> list[Rect]:
+def get_good_rectangles(page: Page) -> list[TracedRect]:
     """Find rectangles in the PDFs that might be redactions.
 
     :param page: The PyMuPDF Page to look for rectangles within.
@@ -26,7 +35,7 @@ def get_good_rectangles(page: Page) -> list[Rect]:
     determine if a letter is above or below a rectangle or whether it's the
     same color.
     """
-    drawings = page.get_drawings()
+    drawings: list[Drawing] = page.get_drawings()
     good_rectangles = []
     for drawing in drawings:
         if drawing.get("fill_opacity") is None or drawing["fill_opacity"] != 1:
@@ -59,33 +68,38 @@ def get_good_rectangles(page: Page) -> list[Rect]:
         # say that the letters before and after the redaction are badly
         # redacted. Instead, use the rectangles from the "items" key, which in
         # the above example would yield two rectangles ("re" types).
-        rectangles = [item[1] for item in drawing["items"] if item[0] == "re"]
+        rectangles = [
+            TracedRect(item[1], drawing["seqno"], drawing["fill"])
+            for item in drawing["items"]
+            if item[0] == "re"
+        ]
 
         for rectangle in rectangles:
-            # Give it the sequence number and color of its parent drawing
-            rectangle.seqno = drawing["seqno"]
-            rectangle.fill = drawing["fill"]
             if rectangle.y1 <= 43:
                 # It's a header, ignore it
                 continue
 
+            height: float = rectangle.height
+            width: float = rectangle.width
             if all(
                 [
                     # Eliminate horizontal lines
-                    rectangle.height > 4,
+                    height > 4,
                     # Eliminate vertical lines, like those along margins.
-                    rectangle.width > 4,
+                    width > 4,
                 ]
             ):
-                if rectangle.is_infinite:
-                    rectangle.normalize()
+                is_infinite: bool = rectangle.is_infinite
+                if is_infinite:
+                    normalize: Callable[[], Rect] = rectangle.normalize
+                    normalize()
                 good_rectangles.append(rectangle)
     return good_rectangles
 
 
 def intersects(
-    text_rect: Rect,
-    rectangles: list[Rect],
+    text_rect: TracedRect,
+    rectangles: list[TracedRect],
     occlusion_threshold: float = 0.0,
 ) -> bool:
     """Determine if a rectangle intersects is occluded by a list of others
@@ -110,7 +124,8 @@ def intersects(
 
     overlapping_areas = []
     for rect in rectangles:
-        intersecting_area = abs(text_rect & rect)
+        intersection: Rect = text_rect & rect
+        intersecting_area: float = abs(intersection)
         if intersecting_area > 0 and rect.seqno > text_rect.seqno:
             # Intersecting text was drawn first, meaning it's behind the rect.
             overlapping_areas.append(intersecting_area)
@@ -132,7 +147,7 @@ def intersects(
 
 
 def get_intersecting_chars(
-    page: Page, rectangles: list[Rect]
+    page: Page, rectangles: list[TracedRect]
 ) -> list[CharDictType]:
     """Get the chars that are occluded by the rectangles
 
@@ -147,20 +162,17 @@ def get_intersecting_chars(
     if len(rectangles) == 0:
         return []
 
-    spans = page.get_texttrace()
+    get_texttrace: Callable[[], list[TextSpan]] = page.get_texttrace
+    spans = get_texttrace()
     intersecting_chars = []
     for span in spans:
         span_seq_no = span["seqno"]
         span_color = span["color"]
-        span_rect = fitz.Rect(span["bbox"])
-        span_rect.seqno = span_seq_no
-        span_rect.fill = span_color
+        span_rect = TracedRect(span["bbox"], span_seq_no, span_color)
         if not intersects(span_rect, rectangles):
             continue
         for char in span["chars"]:
-            char_rect = fitz.Rect(char[3])
-            char_rect.seqno = span_seq_no
-            char_rect.fill = span_color
+            char_rect = TracedRect(char[3], span_seq_no, span_color)
             if intersects(char_rect, rectangles, occlusion_threshold=0.8):
                 char_dict: CharDictType = {
                     "rect": char_rect,
@@ -173,7 +185,7 @@ def get_intersecting_chars(
 
 def group_chars_by_rect(
     chars: list[CharDictType],
-    rectangles: list[Rect],
+    rectangles: list[TracedRect],
 ) -> list[RedactionType]:
     """Take the chars that intersected with rectangles, and the rectangles they
     intersected with and group the chars back into words along with the bboxes
@@ -204,8 +216,12 @@ def group_chars_by_rect(
     # Reverse-sort the rectangles by sequence number, and eliminate each char
     # as soon as it intersects a rectangle.
     redactions = []
+
     # Sort the rectangles by reversed sequence key.
-    seq_sorted_rects = sorted(rectangles, key=lambda x: x.seqno, reverse=True)
+    def sequence_number(rect: TracedRect) -> int:
+        return rect.seqno
+
+    seq_sorted_rects = sorted(rectangles, key=sequence_number, reverse=True)
     for rect in seq_sorted_rects:
         redaction: RedactionType = {
             "bbox": (rect.x0, rect.y0, rect.x1, rect.y1),
@@ -214,7 +230,9 @@ def group_chars_by_rect(
         # Make a copy of the chars list so we can manipulate it in the loop
         char_copy = chars.copy()
         for char in char_copy:
-            if abs(char["rect"] & rect):
+            intersection: Rect = char["rect"] & rect
+            area: float = abs(intersection)
+            if area:
                 # The char intersects with this rectangle. Add it to the
                 # redaction dict, and remove it from the list so it doesn't
                 # get analyzed again.
@@ -225,7 +243,6 @@ def group_chars_by_rect(
     return redactions
 
 
-@typing.no_type_check  # It gets confused w/filters
 def filter_redactions_by_text(
     redactions: list[RedactionType],
 ) -> list[RedactionType]:
@@ -234,47 +251,76 @@ def filter_redactions_by_text(
     :param redactions: A list of redactions that might be bad
     :return: A (hopefully) smaller list of redactions
     """
-    # Isn't just repeated text like XXXX
-    redactions = filter(lambda r: not is_repeated_chars(r["text"]), redactions)
-
-    # Has non-whitespace content and isn't blank
-    redactions = filter(lambda r: r["text"].strip(), redactions)
-
-    # Has some letters or numbers (isn't just a rectangle
-    # with nothing under it)
-    redactions = filter(lambda r: re.search(r"[\d\w]", r["text"]), redactions)
-
-    # Has OK words in redaction
-    redactions = filter(lambda r: is_ok_words(r["text"]), redactions)
-
-    return list(redactions)
+    return [
+        redaction
+        for redaction in redactions
+        # Exclude repeated characters such as XXXX.
+        if not is_repeated_chars(redaction["text"])
+        # Require non-whitespace content.
+        and redaction["text"].strip()
+        # Require letters or numbers beneath the rectangle.
+        and re.search(r"[\d\w]", redaction["text"])
+        # Exclude acceptable redaction labels such as "confidential".
+        and is_ok_words(redaction["text"])
+    ]
 
 
 def filter_redactions_by_pixmap(
     redactions: list[RedactionType],
     page: Page,
 ) -> list[RedactionType]:
-    """Convert each bad redaction to an image and check it for text
+    """Keep rectangles whose solid fill reproduces the page's appearance.
+
+    Render a temporary page before and after painting the rectangle. Exact
+    pixel equality confirms that it already appears as a solid rectangle.
+    Comparing the full page also preserves pixels at fractional boundaries.
 
     :param redactions: A list of redactions that might be bad
     :param page: The PyMuPDF.Page object where the bad redactions might be
     :return: The redactions, if they are valid
     """
+    if not redactions:
+        return []
+
+    source: Document | None = page.parent
+    page_number: int | None = page.number
+    if source is None or page_number is None:
+        raise ValueError("orphaned object: parent is None")
+
     bad_redactions = []
     for redaction in redactions:
-        pixmap = page.get_pixmap(
-            # Use gray for simplicity and speed, though this risks missing a
-            # bad redaction.
-            colorspace=fitz.csRGB,
-            clip=fitz.Rect(redaction["bbox"]),
-        )
-        if not pixmap.is_unicolor:
-            # There's some degree of variation in the colors of the pixels.
-            # ∴ it's not a uniform box and it's not a bad redaction.
-            # filename = f'{redaction["text"].replace("/", "_")}.png'
-            # pixmap.save(filename)
-            continue
-        bad_redactions.append(redaction)
+        copy = open_document()
+        with copy:
+            insert_pdf: InsertPdf = copy.insert_pdf
+            insert_pdf(source, from_page=page_number, to_page=page_number)
+            # Include annotations in the page content before painting over it.
+            bake: Callable[[], None] = copy.bake
+            bake()
+            copied_page = copy[0]
+            set_rotation: Callable[[int], None] = copied_page.set_rotation
+            set_rotation(0)
+            page_rect: Rect = copied_page.rect
+            intersects_page: Callable[[BBox], bool] = page_rect.intersects
+            if not intersects_page(redaction["bbox"]):
+                continue
+
+            before = copied_page.get_pixmap(colorspace=fitz.csRGB)
+            width: int = before.width
+            height: int = before.height
+            origin_x: int = before.x
+            origin_y: int = before.y
+            x0, y0, x1, y1 = redaction["bbox"]
+            x = min(max(int((x0 + x1) / 2) - origin_x, 0), width - 1)
+            y = min(max(int((y0 + y1) / 2) - origin_y, 0), height - 1)
+            pixel: Callable[[int, int], tuple[int, int, int]] = before.pixel
+            color = tuple(channel / 255 for channel in pixel(x, y))
+            copied_page.draw_rect(redaction["bbox"], color=None, fill=color)
+
+            after = copied_page.get_pixmap(colorspace=fitz.csRGB)
+            before_pixels: bytes = before.samples
+            after_pixels: bytes = after.samples
+            if before_pixels == after_pixels:
+                bad_redactions.append(redaction)
     return bad_redactions
 
 
