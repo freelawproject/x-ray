@@ -6,7 +6,9 @@
 
 ## Upcoming Changes
 
-- N/A
+ - Enable strict mypy validation and complete the library's type annotations.
+ - Upgrade PyMuPDF and compare full-page renders when checking redactions.
+ - Update dependencies and development tools.
 
 ## Current Version
 

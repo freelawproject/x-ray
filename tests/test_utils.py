@@ -4,13 +4,13 @@ X-Ray Tests
 
 import os
 import unittest
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from unittest import IsolatedAsyncioTestCase, TestCase
 
-import fitz
-from fitz import Rect
-
 import xray
+from xray._pymupdf import BBox, TracedRect, open_document
+from xray.custom_types import PdfRedactionsDict
 from xray.pdf_utils import (
     get_bad_redactions,
     get_good_rectangles,
@@ -21,11 +21,16 @@ from xray.text_utils import looks_like_a_date
 
 root_path = Path(__file__).resolve().parent / "assets"
 
+_expected_failure: Callable[
+    [Callable[["OcclusionTest"], Awaitable[None]]],
+    Callable[["OcclusionTest"], Awaitable[None]],
+] = unittest.expectedFailure
+
 
 class TextTest(TestCase):
     """Do our text tools work properly?"""
 
-    def test_valid_date_only_checks(self):
+    def test_valid_date_only_checks(self) -> None:
         actual_dates = (
             "12/13/21",
             "12/14/2111",
@@ -37,7 +42,7 @@ class TextTest(TestCase):
             with self.subTest(d):
                 self.assertTrue(looks_like_a_date(d))
 
-    def test_invalid_date_only_checks(self):
+    def test_invalid_date_only_checks(self) -> None:
         not_dates = (
             "111/11/11",
             "asdf-",
@@ -52,31 +57,28 @@ class TextTest(TestCase):
 class RectTest(TestCase):
     """Do our rectangle-finding utilities work properly?"""
 
-    def test_we_find_rectangles_when_we_should(self):
+    def test_we_find_rectangles_when_we_should(self) -> None:
         paths = (
             root_path / "rectangles_yes.pdf",
             root_path / "rectangles_yes_2.pdf",
         )
         for path in paths:
-            with fitz.open(path) as pdf, self.subTest(f"{path=}"):
+            pdf = open_document(path)
+            with pdf, self.subTest(f"{path=}"):
                 page = pdf[0]
                 self.assertTrue(get_good_rectangles(page))
 
-    def test_we_do_not_find_rectangles_when_we_should_not(self):
+    def test_we_do_not_find_rectangles_when_we_should_not(self) -> None:
         path = root_path / "rectangles_no.pdf"
-        with fitz.open(path) as pdf:
+        pdf = open_document(path)
+        with pdf:
             page = pdf[0]
             self.assertFalse(get_good_rectangles(page))
 
 
-def rectangle_factory(
-    bbox: tuple[float, ...], seqno: int, fill: float
-) -> Rect:
+def rectangle_factory(bbox: BBox, seqno: int, fill: float) -> TracedRect:
     """Factory for making little rectangles with extra attributes"""
-    r = Rect(*bbox)
-    r.seqno = seqno
-    r.fill = fill
-    return r
+    return TracedRect(bbox, seqno, fill)
 
 
 class IntersectionTest(TestCase):
@@ -88,7 +90,7 @@ class IntersectionTest(TestCase):
         fill=1,
     )
 
-    def test_in_one_of_many(self):
+    def test_in_one_of_many(self) -> None:
         """Does a bbox inside of one, but not all rectangles intersect?"""
         self.assertTrue(
             intersects(
@@ -100,7 +102,7 @@ class IntersectionTest(TestCase):
             )
         )
 
-    def test_not_in_any(self):
+    def test_not_in_any(self) -> None:
         """Do we return False when things don't intersect?"""
         self.assertFalse(
             intersects(
@@ -112,7 +114,7 @@ class IntersectionTest(TestCase):
             )
         )
 
-    def test_in_all(self):
+    def test_in_all(self) -> None:
         """Do we return True when the bbox is in all the rects?"""
         self.assertTrue(
             intersects(
@@ -124,7 +126,7 @@ class IntersectionTest(TestCase):
             )
         )
 
-    def test_partial_intersection(self):
+    def test_partial_intersection(self) -> None:
         """Do we return true when only corners intersect?"""
         self.assertTrue(
             intersects(
@@ -137,29 +139,32 @@ class IntersectionTest(TestCase):
 class OcclusionTest(IsolatedAsyncioTestCase):
     """Can we get a list of bad redactions?"""
 
-    def test_finding_bad_redactions(self):
+    def test_finding_bad_redactions(self) -> None:
         path = root_path / "rectangles_yes.pdf"
-        with fitz.open(path) as pdf:
+        pdf = open_document(path)
+        with pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 64)
 
-    def test_cross_hatches_are_ok(self):
+    def test_cross_hatches_are_ok(self) -> None:
         path = root_path / "bad_cross_hatched_redactions.pdf"
-        with fitz.open(path) as pdf:
+        pdf = open_document(path)
+        with pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 639)
 
-    def test_ignoring_partial_occlusions(self):
+    def test_ignoring_partial_occlusions(self) -> None:
         path = root_path / "partial_intersections_ok.pdf"
-        with fitz.open(path) as pdf:
+        pdf = open_document(path)
+        with pdf:
             page = pdf[0]
             chars = get_intersecting_chars(page, get_good_rectangles(page))
         self.assertEqual(len(chars), 0)
 
-    @unittest.expectedFailure
-    async def test_overlapping_text(self):
+    @_expected_failure
+    async def test_overlapping_text(self) -> None:
         """Do we find bad redactions with visible text below them?
 
         This test case is a nasty one. If you look closely at LLC with your
@@ -180,7 +185,7 @@ class OcclusionTest(IsolatedAsyncioTestCase):
             expected_redaction_count,
         )
 
-    def test_text_on_rectangles_ok(self):
+    def test_text_on_rectangles_ok(self) -> None:
         """Is text on top of an opaque rectangles, wrongly marked as a bad
         redaction?
         """
@@ -196,10 +201,11 @@ class OcclusionTest(IsolatedAsyncioTestCase):
             "rect_ordering_5.2.pdf",
             "rect_ordering_6.19.pdf",
         )
-        for path in paths:
-            path = root_path / path
+        for filename in paths:
+            path = root_path / filename
             with self.subTest(f"{path=}"):
-                with fitz.open(path) as pdf:
+                pdf = open_document(path)
+                with pdf:
                     page = pdf[0]
                     chars = get_bad_redactions(page)
                 self.assertEqual(
@@ -212,7 +218,7 @@ class OcclusionTest(IsolatedAsyncioTestCase):
 class InspectApiTest(IsolatedAsyncioTestCase):
     """Does the API of the inspect method work properly?"""
 
-    async def test_inspect_works_with_path_or_str(self):
+    async def test_inspect_works_with_path_or_str(self) -> None:
         path_str = "rectangles_yes.pdf"
         paths = (
             root_path / path_str,
@@ -222,7 +228,7 @@ class InspectApiTest(IsolatedAsyncioTestCase):
             redactions = await xray.inspect(path)
             self.assertTrue(redactions)
 
-    async def test_inspect_works_with_bytes(self):
+    async def test_inspect_works_with_bytes(self) -> None:
         path = root_path / "rectangles_yes.pdf"
         with open(path, "rb") as f:
             data = f.read()
@@ -235,9 +241,11 @@ class IntegrationTest(IsolatedAsyncioTestCase):
     """Do our highest-level APIs work?"""
 
     path = root_path / "rectangles_yes.pdf"
+    empty_redactions: PdfRedactionsDict = {}
 
-    def test_bad_redactions_on_single_page(self):
-        with fitz.open(self.path) as pdf:
+    def test_bad_redactions_on_single_page(self) -> None:
+        pdf = open_document(self.path)
+        with pdf:
             page = pdf[0]
             bad_redactions = get_bad_redactions(page)
         expected_bad_redaction_count = 3
@@ -250,11 +258,11 @@ class IntegrationTest(IsolatedAsyncioTestCase):
             f"{bad_redactions}",
         )
 
-    async def test_inspect_method_on_a_filepath(self):
+    async def test_inspect_method_on_a_filepath(self) -> None:
         redactions = await xray.inspect(self.path)
         self.assertEqual(len(redactions[1]), 3)
 
-    async def test_tricky_rectangles(self):
+    async def test_tricky_rectangles(self) -> None:
         """Check that tricky PDFs don't create false positives.
 
         These are a variety of tough cases that don't have redactions, but
@@ -322,17 +330,17 @@ class IntegrationTest(IsolatedAsyncioTestCase):
             # need to be fixed by handling dates though, probably.)
             "no_bad_redactions.8.1.pdf",
         )
-        for path in paths:
-            path = root_path / path
+        for filename in paths:
+            path = root_path / filename
             with self.subTest(f"{path=}"):
                 redactions = await xray.inspect(path)
                 self.assertEqual(
                     redactions,
-                    {},
+                    self.empty_redactions,
                     msg="Didn't get empty dict when there were no redactions.",
                 )
 
-    async def test_whitespace_only_redaction_no_results(self):
+    async def test_whitespace_only_redaction_no_results(self) -> None:
         """Do we ignore redactions containing only whitespace chars?"""
         paths = (
             "whitespace_redactions.pdf",
@@ -343,35 +351,35 @@ class IntegrationTest(IsolatedAsyncioTestCase):
             redactions = await xray.inspect(root_path / path)
             self.assertEqual(
                 redactions,
-                {},
+                self.empty_redactions,
                 msg="Didn't get empty dict when encountering exclusively "
                 "whitespace-filled redactions.",
             )
 
-    async def test_unfilled_rect(self):
+    async def test_unfilled_rect(self) -> None:
         """Do unfilled boxes (with only borders and no fill) get ignored?"""
         path = root_path / "unfilled_rect.pdf"
         redactions = await xray.inspect(path)
         self.assertEqual(
             redactions,
-            {},
+            self.empty_redactions,
             msg="Got redactions 'under' an unfilled rectangle.",
         )
 
-    async def test_ok_words_not_redacted(self):
+    async def test_ok_words_not_redacted(self) -> None:
         path = root_path / "ok_words.pdf"
         redactions = await xray.inspect(path)
         self.assertEqual(
             redactions,
-            {},
+            self.empty_redactions,
             msg="Got redaction even though none in document",
         )
 
-    async def test_multiline_redaction(self):
+    async def test_multiline_redaction(self) -> None:
         path = root_path / "multi_line_redaction_ok.pdf"
         redactions = await xray.inspect(path)
         self.assertEqual(
             redactions,
-            {},
+            self.empty_redactions,
             msg="Got redactions on a multiline redaction, but shouldn't have.",
         )

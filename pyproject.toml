@@ -32,9 +32,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 dependencies = [
-    "PyMuPDF==1.24.14",
+    "PyMuPDF>=1.28.2",
     "httpx2[http2]>=2.13.1",
 ]
 
@@ -53,12 +54,21 @@ xray = "xray.__main__:main"
 dev = [
     "mypy>=2.4.0",
     "wheel>=0.48.0",
-    "pre-commit>=4.6.2",
+    "pre-commit>=4.7.0",
     "ipython>=9.17.1",
 ]
 
 [tool.setuptools]
 packages = [ "xray" ]
+
+[tool.setuptools.package-data]
+xray = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["xray", "tests", "tools"]
+exclude_gitignore = true
+strict = true
 
 [tool.ruff]
 line-length = 79

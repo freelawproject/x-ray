@@ -1,14 +1,14 @@
-"""Custom types for MyPy"""
+"""Types for x-ray's redaction results."""
 
 from typing import TypedDict
 
-from fitz import Rect
+from ._pymupdf import BBox, TracedRect
 
 
 class RedactionType(TypedDict):
     """A type for a redaction"""
 
-    bbox: tuple[float, ...]
+    bbox: BBox
     text: str
 
 
@@ -19,5 +19,5 @@ PdfRedactionsDict = dict[int, list[RedactionType]]
 class CharDictType(TypedDict):
     """A type for a character dictionary"""
 
-    rect: Rect
+    rect: TracedRect
     c: str
