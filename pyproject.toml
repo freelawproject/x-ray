@@ -34,7 +34,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "PyMuPDF==1.24.14",
+    "PyMuPDF>=1.28.2",
     "httpx2[http2]>=2.13.1",
 ]
 
@@ -53,7 +53,7 @@ xray = "xray.__main__:main"
 dev = [
     "mypy>=2.4.0",
     "wheel>=0.48.0",
-    "pre-commit>=4.6.2",
+    "pre-commit>=4.7.0",
     "ipython>=9.17.1",
 ]
 
