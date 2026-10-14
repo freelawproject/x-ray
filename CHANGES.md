@@ -6,6 +6,12 @@
 
 ## Upcoming Changes
 
+- N/A
+
+## Current Version
+
+### v0.4.0
+
  - Breaking change: direct calls to `xray.inspect()` and `xray.cli()`
    now require `await`.
  - Replaced Requests with async httpx2 downloads, with HTTP/2 and redirects
@@ -14,14 +20,12 @@
  - Added support for Python 3.15.
  - Dropped support for Python 3.10.
 
-## Current Version
+## Past Versions
 
 ### v0.3.6, 2025-12-24
 
  - Happy holidays
  - Fixes CLI export to be JSON not Python object ([issue](https://github.com/freelawproject/x-ray/issues/189))
-
-## Past Versions
 
 ### v0.3.5, 2025-12-08
 
