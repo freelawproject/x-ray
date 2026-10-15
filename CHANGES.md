@@ -6,7 +6,10 @@
 
 ## Upcoming Changes
 
-- N/A
+ - Upgrade PyMuPDF and reuse page renders for exact redaction checks.
+ - Speed up text rendering, rectangle matching, character grouping, and pixel
+   comparisons.
+ - Update dependencies and development tools.
 
 ## Current Version
 
