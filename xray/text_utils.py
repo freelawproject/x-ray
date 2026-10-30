@@ -29,8 +29,8 @@ def is_ok_words(text: str) -> bool:
     """
     text = " ".join(text.strip().split())
     text = re.sub(
-        r"confidential|name +redacted|privileged?|re|red|reda|redac|redact|"
-        r"redacte|redacted|redacted +and +publicly +filed|",
+        r"confidential|name +redacted|redacted +and +publicly +filed|"
+        r"redacted|redacte|redact|redac|reda|red|re|privileged?",
         "",
         text,
         flags=re.IGNORECASE | re.MULTILINE,
