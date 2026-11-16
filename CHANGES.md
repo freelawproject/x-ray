@@ -6,7 +6,7 @@
 
 ## Upcoming Changes
 
-- N/A
+- Publish to PyPI with trusted publishing instead of an API token.
 
 ## Current Version
 
