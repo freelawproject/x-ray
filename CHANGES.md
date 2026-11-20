@@ -10,7 +10,13 @@
 
 ## Current Version
 
-### v0.4.0
+### v1.0.0
+
+-
+
+## Past Versions
+
+### v0.4.0, 2026-10-14
 
  - Breaking change: direct calls to `xray.inspect()` and `xray.cli()`
    now require `await`.
@@ -19,8 +25,6 @@
  - Update development dependencies, pre-commit hooks, and GitHub Actions.
  - Added support for Python 3.15.
  - Dropped support for Python 3.10.
-
-## Past Versions
 
 ### v0.3.6, 2025-12-24
 
